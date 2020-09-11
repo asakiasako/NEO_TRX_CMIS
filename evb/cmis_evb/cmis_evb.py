@@ -10,12 +10,12 @@ class CmisEVB(object):
         host: string, hostname or ip address
         port: int
         """
-        self.host = host
-        self.port = port
         self.__timeout = timeout
         self.__socket = None
         self.__is_connected = False
         self.__id_maps = id_maps.id_maps
+        self.host = host
+        self.port = port
     
     def __enter__(self):
         return self

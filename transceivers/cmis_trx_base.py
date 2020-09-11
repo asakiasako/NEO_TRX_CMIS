@@ -1,10 +1,12 @@
 from ..evb import CmisEVB
+from ..cmis import CMIS
 import time
 
-class CMISTrxBase():
-    def __init__(self, ip):
+class CMISTrxBase(CMIS):
+    def __init__(self, ip, trx_type):
         if not isinstance(ip, str):
             raise TypeError('ip should be a str in ip address format')
+        CMIS.__init__(self, trx_type)
         self.__ip = ip
         self.__evb = CmisEVB(host=ip, timeout=5)
 
@@ -17,6 +19,10 @@ class CMISTrxBase():
 
     def __repr__(self):
         return '<{classname} ip={ip}>'.format(classname=self.__class__.__name__, ip=self.__ip)
+
+    @property
+    def evb(self):
+        return self.__evb
 
     def connect(self):
         self.__evb.connect()
