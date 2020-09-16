@@ -68,6 +68,9 @@ class CMISTrxBase(CMIS):
         self.select_bank_page(bank=0, page=0x12)
         return self[slice(*ms_bytes)].to_unsigned() + self[slice(*ls_bytes)].to_unsigned()*0.05*10**(-3)
 
+    def get_pn(self):
+        return self[0, 0x00, 148:163].decode().strip()
+
     def get_sn(self):
         return self[0, 0x00, 166:181].decode().strip()
 
