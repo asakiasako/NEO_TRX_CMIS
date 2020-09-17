@@ -1,5 +1,7 @@
 from ..evb import CmisEVB
 from ..cmis import CMIS
+from .components.canopus_api import CanopusApi
+from .components.canopus_com import CanopusCom
 import time
 
 class CMISTrxBase(CMIS):
@@ -9,6 +11,7 @@ class CMISTrxBase(CMIS):
         CMIS.__init__(self, trx_type)
         self.__ip = ip
         self.__evb = CmisEVB(host=ip, timeout=5)
+        self.__dsp = CanopusApi(CanopusCom(self))
 
     def __enter__(self):
         self.connect()
@@ -23,6 +26,10 @@ class CMISTrxBase(CMIS):
     @property
     def evb(self):
         return self.__evb
+
+    @property
+    def dsp(self):
+        return self.__dsp
 
     def connect(self):
         self.__evb.connect()

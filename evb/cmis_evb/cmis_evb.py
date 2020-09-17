@@ -98,6 +98,7 @@ class CmisEVB(object):
                 raise TypeError('params should be int or str.')
             else:
                 tx += ' %s' % i
+        # print(repr(tx))
         self.__socket.send(tx.encode())
 
     def read_reply(self):
@@ -105,8 +106,9 @@ class CmisEVB(object):
         return: list of str, replied values from EVB
         """
         rx = self.__socket.recv(1024).decode('gbk')
+        # print(repr(rx))
 
-        m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)', rx)
+        m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)\r\n>.*', rx)
         if not m:
             raise ValueError('Unexpected reply from host board. Reply: %s' % rx)
         err_code = int(m.group(1))
@@ -114,7 +116,7 @@ class CmisEVB(object):
             err_msg = ERROR_CODES.get(err_code, 'Unknown')
             raise ValueError('EVB Command Error: [0x%04X] %s' % (err_code, err_msg))
         reply_str = m.group(3)
-        reply = reply_str.split(',')
+        reply = reply_str.strip(',').split(',')
         return reply
 
     def query(self, cmd, *params):
@@ -231,7 +233,7 @@ class CmisEVB(object):
             # read current address
             reply = self.query('twi', data_len)
 
-        return b''.join([int(i).to_bytes(1, 'big') for i in reply])
+        return b''.join([int(i, base=16).to_bytes(1, 'big') for i in reply])
 
     def twi_write(self, reg_addr, data, data_len=None):
         """
