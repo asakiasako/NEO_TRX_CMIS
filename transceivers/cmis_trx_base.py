@@ -171,6 +171,14 @@ class CMISTrxBase(CMIS):
         """
         self[0, 0x12, 136+(lane-1)*2:136+(lane-1)*2+1] = ch_num if ch_num >=0 else ch_num+0x10000
 
+    def set_fine_tuning_offset(self, lane, offset):
+        """
+        * lane: <int> lane
+        * offset: <int> GHz
+        """
+        offset_in_mhz = round(offset*1000)
+        self[0, 0x12, 152:153] = offset_in_mhz if offset_in_mhz >=0 else (0x100 + offset_in_mhz)
+
     def get_current_frequency(self, lane):
         """
         * lane: <int> lane

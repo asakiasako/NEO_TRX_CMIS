@@ -49,7 +49,6 @@ class CanopusCom:
         self.__trx[128:129] = cmd[:2]
 
         time.sleep(0.5)
-        # TODO: below
         while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
             pass
 
