@@ -185,7 +185,10 @@ class CMISTrxBase(CMIS):
         return:
             * <float> frequency in THz
         """
-        ms_bytes = (168+4*(lane-1), 169+4*(lane-1))  # THz
-        ls_bytes = (170+4*(lane-1), 171+4*(lane-1))  # 0.05GHz
+        # ms_bytes = (168+4*(lane-1), 169+4*(lane-1))  # THz
+        # ls_bytes = (170+4*(lane-1), 171+4*(lane-1))  # 0.05GHz
+        # self.select_bank_page(bank=0, page=0x12)
+        # return self[slice(*ms_bytes)].to_unsigned() + self[slice(*ls_bytes)].to_unsigned()*0.05*10**(-3)
         self.select_bank_page(bank=0, page=0x12)
-        return self[slice(*ms_bytes)].to_unsigned() + self[slice(*ls_bytes)].to_unsigned()*0.05*10**(-3)
+        freq = self[168:171].to_unsigned()/1000/1000
+        return freq
