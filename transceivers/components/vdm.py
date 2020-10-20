@@ -1,3 +1,5 @@
+import time
+
 class Vdm:
 
     def __init__(self, trx):
@@ -36,6 +38,40 @@ class Vdm:
     @property
     def keys(self):
         return self.__keys
+
+    @property
+    def FreezeRequest(self):
+        flag = self.__trx[0, 0x2F, 144][7]
+        freeze = bool(flag)
+        return freeze
+
+    @FreezeRequest.setter
+    def FreezeRequest(self, freezed):
+        if not freezed in (True, False):
+            raise ValueError('Parameter freezed should be bool.')
+        self.__trx[0, 0x2F, 144][7] = int(freezed)
+
+    @property
+    def FreezeDone(self):
+        flag = self.__trx[0, 0x2F, 145][7]
+        done = bool(flag)
+        return done
+
+    @property
+    def UnfreezeDone(self):
+        flag = self.__trx[0, 0x2F, 145][6]
+        done = bool(flag)
+        return done
+
+    def freezeUntilDone(self):
+        self.FreezeRequest = True
+        while not self.FreezeDone:
+            time.sleep(0.05)
+
+    def unfreezeUntilDone(self):
+        self.FreezeRequest = False
+        while not self.UnfreezeDone:
+            time.sleep(0.05)
 
     def __parse_ber(self, raw):
         return (raw & 0x7ff) * 10**((raw >> 11) - 24)
