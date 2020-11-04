@@ -2,6 +2,7 @@ import socket
 from . import id_maps
 from .constants import CLIENT_CONF, ERROR_CODES
 import re
+from threading import Lock
 
 class CmisEVB(object):
     
@@ -16,6 +17,7 @@ class CmisEVB(object):
         self.__id_maps = id_maps.id_maps
         self.host = host
         self.port = port
+        self.__lock = Lock()
     
     def __enter__(self):
         return self
@@ -61,24 +63,26 @@ class CmisEVB(object):
         return self.__is_connected
 
     def connect(self):
-        if self.is_connected:
-            return
-        try:
-            self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.__socket.settimeout(self.__timeout)
-            self.__socket.connect((self.host, self.port))
-            prompt = self.__socket.recv(1024).decode('gbk')
-            self.__is_connected = True
-            print(prompt)
-        except Exception:
-            raise ConnectionError('Unable to connect DUT. host=%r, port=%r' % (self.host, self.port))
+        with self.__lock:
+            if self.is_connected:
+                return
+            try:
+                self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.__socket.settimeout(self.__timeout)
+                self.__socket.connect((self.host, self.port))
+                prompt = self.__socket.recv(1024).decode('gbk')
+                self.__is_connected = True
+                print(prompt)
+            except Exception:
+                raise ConnectionError('Unable to connect DUT. host=%r, port=%r' % (self.host, self.port))
 
     def disconnect(self):
-        if not self.is_connected:
-            return
-        self.__socket.close()
-        self.__socket = None
-        self.__is_connected = False
+        with self.__lock:
+            if not self.is_connected:
+                return
+            self.__socket.close()
+            self.__socket = None
+            self.__is_connected = False
 
     def command(self, cmd, *params):
         """
@@ -87,45 +91,48 @@ class CmisEVB(object):
         NOTE: because any command should have a reply, you should always use query method
         to clear the reply
         """
-        if not self.is_connected:
-            raise ConnectionError('OSFP host EVB is not connected.')
-        if not isinstance(cmd, str):
-            raise TypeError('cmd should be string.')
-        prefix = '*'
-        tx = '%s%s' % (prefix, cmd)
-        for i in params:
-            if not isinstance(i, (int, str)):
-                raise TypeError('params should be int or str.')
-            else:
-                tx += ' %s' % i
-        # print(repr(tx))
-        self.__socket.send(tx.encode())
+        with self.__lock:
+            if not self.is_connected:
+                raise ConnectionError('OSFP host EVB is not connected.')
+            if not isinstance(cmd, str):
+                raise TypeError('cmd should be string.')
+            prefix = '*'
+            tx = '%s%s' % (prefix, cmd)
+            for i in params:
+                if not isinstance(i, (int, str)):
+                    raise TypeError('params should be int or str.')
+                else:
+                    tx += ' %s' % i
+            # print(repr(tx))
+            self.__socket.send(tx.encode())
 
     def read_reply(self):
         """
         return: list of str, replied values from EVB
         """
-        rx = self.__socket.recv(1024).decode('gbk')
-        # print(repr(rx))
+        with self.__lock:
+            rx = self.__socket.recv(1024).decode('gbk')
+            # print(repr(rx))
 
-        m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)\r\n>.*', rx)
-        if not m:
-            raise ValueError('Unexpected reply from host board. Reply: %s' % rx)
-        err_code = int(m.group(1))
-        if err_code != 0:
-            err_msg = ERROR_CODES.get(err_code, 'Unknown')
-            raise ValueError('EVB Command Error: [0x%04X] %s' % (err_code, err_msg))
-        reply_str = m.group(3)
-        reply = reply_str.strip(',').split(',')
-        return reply
+            m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)\r\n>.*', rx)
+            if not m:
+                raise ValueError('Unexpected reply from host board. Reply: %s' % rx)
+            err_code = int(m.group(1))
+            if err_code != 0:
+                err_msg = ERROR_CODES.get(err_code, 'Unknown')
+                raise ValueError('EVB Command Error: [0x%04X] %s' % (err_code, err_msg))
+            reply_str = m.group(3)
+            reply = reply_str.strip(',').split(',')
+            return reply
 
     def query(self, cmd, *params):
         """
         return: list of str, replied values from EVB
         """
-        params = [str(param) for param in params if isinstance(param, (float, int))]
-        self.command(cmd, *params)
-        return self.read_reply()
+        with self.__lock:
+            params = [str(param) for param in params if isinstance(param, (float, int))]
+            self.command(cmd, *params)
+            return self.read_reply()
 
     # === Layer 2: management data transfer layer ===
 
