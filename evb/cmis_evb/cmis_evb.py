@@ -2,7 +2,7 @@ import socket
 from . import id_maps
 from .constants import CLIENT_CONF, ERROR_CODES
 import re
-from threading import Lock
+from gevent.lock import BoundedSemaphore
 
 class CmisEVB(object):
     
@@ -17,7 +17,7 @@ class CmisEVB(object):
         self.__id_maps = id_maps.id_maps
         self.host = host
         self.port = port
-        self.__lock = Lock()
+        self.__lock = BoundedSemaphore()
     
     def __enter__(self):
         return self
@@ -91,39 +91,37 @@ class CmisEVB(object):
         NOTE: because any command should have a reply, you should always use query method
         to clear the reply
         """
-        with self.__lock:
-            if not self.is_connected:
-                raise ConnectionError('OSFP host EVB is not connected.')
-            if not isinstance(cmd, str):
-                raise TypeError('cmd should be string.')
-            prefix = '*'
-            tx = '%s%s' % (prefix, cmd)
-            for i in params:
-                if not isinstance(i, (int, str)):
-                    raise TypeError('params should be int or str.')
-                else:
-                    tx += ' %s' % i
-            # print(repr(tx))
-            self.__socket.send(tx.encode())
+        if not self.is_connected:
+            raise ConnectionError('OSFP host EVB is not connected.')
+        if not isinstance(cmd, str):
+            raise TypeError('cmd should be string.')
+        prefix = '*'
+        tx = '%s%s' % (prefix, cmd)
+        for i in params:
+            if not isinstance(i, (int, str)):
+                raise TypeError('params should be int or str.')
+            else:
+                tx += ' %s' % i
+        # print(repr(tx))
+        self.__socket.send(tx.encode())
 
     def read_reply(self):
         """
         return: list of str, replied values from EVB
         """
-        with self.__lock:
-            rx = self.__socket.recv(1024).decode('gbk')
-            # print(repr(rx))
+        rx = self.__socket.recv(1024).decode('gbk')
+        # print(repr(rx))
 
-            m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)\r\n>.*', rx)
-            if not m:
-                raise ValueError('Unexpected reply from host board. Reply: %s' % rx)
-            err_code = int(m.group(1))
-            if err_code != 0:
-                err_msg = ERROR_CODES.get(err_code, 'Unknown')
-                raise ValueError('EVB Command Error: [0x%04X] %s' % (err_code, err_msg))
-            reply_str = m.group(3)
-            reply = reply_str.strip(',').split(',')
-            return reply
+        m = re.match(r'\$(\w{4});(<[\w*\- ]*>){0,1}(.*)\r\n>.*', rx)
+        if not m:
+            raise ValueError('Unexpected reply from host board. Reply: %s' % rx)
+        err_code = int(m.group(1))
+        if err_code != 0:
+            err_msg = ERROR_CODES.get(err_code, 'Unknown')
+            raise ValueError('EVB Command Error: [0x%04X] %s' % (err_code, err_msg))
+        reply_str = m.group(3)
+        reply = reply_str.strip(',').split(',')
+        return reply
 
     def query(self, cmd, *params):
         """
