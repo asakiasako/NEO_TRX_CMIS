@@ -5,6 +5,7 @@ from .components.canopus_com import CanopusCom
 from .components.vdm import Vdm
 from .components.ddm import Ddm
 from .components.flag import Flag
+from .components.dac import Dac
 import time
 import math
 
@@ -19,6 +20,7 @@ class CMISTrxBase(CMIS):
         self.__vdm = Vdm(self)
         self.__ddm = Ddm(self)
         self.__flag = Flag(self)
+        self.__dac = Dac(self)
 
     def __enter__(self):
         self.connect()
@@ -49,6 +51,10 @@ class CMISTrxBase(CMIS):
     @property
     def flag(self):
         return self.__flag
+
+    @property
+    def dac(self):
+        return self.__dac
 
     def connect(self):
         self.__evb.connect()
