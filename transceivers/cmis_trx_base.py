@@ -162,6 +162,11 @@ class CMISTrxBase(CMIS):
         }
         return state_code_map.get(state_code, 'Undefined: %Xh' % state_code)
 
+    def get_host_rx_output_status(self, n_lane):
+        bank = math.ceil(n_lane/8)-1
+        bit = (n_lane-1) % 8
+        return bool(self[bank, 0x11, 132][bit])
+
     def get_frequency_channel(self, lane):
         """
         * lane: <int> lane
