@@ -6,6 +6,7 @@ from .components.vdm import Vdm
 from .components.ddm import Ddm
 from .components.flag import Flag
 from .components.dac import Dac
+from .components.abc import AutoBiasControl
 import time
 import math
 
@@ -21,6 +22,7 @@ class CMISTrxBase(CMIS):
         self.__ddm = Ddm(self)
         self.__flag = Flag(self)
         self.__dac = Dac(self)
+        self.__abc = AutoBiasControl(self)
 
     def __enter__(self):
         self.connect()
@@ -55,6 +57,10 @@ class CMISTrxBase(CMIS):
     @property
     def dac(self):
         return self.__dac
+
+    @property
+    def abc(self):
+        return self.__abc
 
     def connect(self):
         self.__evb.connect()
@@ -188,7 +194,7 @@ class CMISTrxBase(CMIS):
         * offset: <int> GHz
         """
         offset_in_mhz = round(offset*1000)
-        self[0, 0x12, 152:153] = offset_in_mhz if offset_in_mhz >=0 else (0x100 + offset_in_mhz)
+        self[0, 0x12, 152+2*(lane-1):153+2*(lane-1)] = offset_in_mhz if offset_in_mhz >=0 else (0x10000 + offset_in_mhz)
 
     def get_current_frequency(self, lane):
         """
