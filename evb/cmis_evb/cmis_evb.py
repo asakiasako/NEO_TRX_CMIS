@@ -282,3 +282,8 @@ class CmisEVB(object):
 
     def get_icc_monitor(self):
         return self.get_ain('P3V3_OSFP_CURR_CHECK')[1]
+
+    def set_fan_speed(self, value):
+        if not 0 <= value <= 100:
+            raise ValueError('Invalid value for fan duty percent: %r' % value)
+        self.query('FAN', round(value))

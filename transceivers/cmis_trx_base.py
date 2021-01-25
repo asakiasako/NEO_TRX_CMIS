@@ -6,6 +6,7 @@ from .components.vdm import Vdm
 from .components.ddm import Ddm
 from .components.flag import Flag
 from .components.dac import Dac
+from .components.adc import Adc
 from .components.abc import AutoBiasControl
 import time
 import math
@@ -22,6 +23,7 @@ class CMISTrxBase(CMIS):
         self.__ddm = Ddm(self)
         self.__flag = Flag(self)
         self.__dac = Dac(self)
+        self.__adc = Adc(self)
         self.__abc = AutoBiasControl(self)
 
     def __enter__(self):

@@ -89,7 +89,7 @@ class Dac:
         elif mode == 'r':
             return _raw_aval
         else:
-            raise ValueError('Invalid mode to set DAC: {mode}'.format(mode=mode))
+            raise ValueError('Invalid mode to get DAC: {mode}'.format(mode=mode))
 
     def set(self, key, v, mode='a'):
         if key not in self.KEYS:
