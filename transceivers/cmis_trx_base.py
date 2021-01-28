@@ -59,6 +59,10 @@ class CMISTrxBase(CMIS):
     @property
     def dac(self):
         return self.__dac
+    
+    @property
+    def adc(self):
+        return self.__adc
 
     @property
     def abc(self):

@@ -72,7 +72,7 @@ class Dac:
         if (not self.__trx.cdb1.STS_BUSY) and (not self.__trx.cdb1.STS_FAIL):
             rlplen = self.__trx[134]
             rlp_chkcode = self.__trx[135]
-            rlp = self.__trx[136, 136+rlplen-1]
+            rlp = self.__trx[136:136+rlplen-1]
             if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
                 _dval = struct.unpack('>1H', rlp[0:2])[0]       
                 _aval = struct.unpack('<1f', rlp[2:6])[0]
