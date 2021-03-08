@@ -123,6 +123,20 @@ class CMISTrxBase(CMIS):
     def get_sn(self):
         return self[0, 0x00, 166:181].decode().strip()
 
+    def get_active_firmware_version(self):
+        firmware_info = self.cdb1_api.GetFirmwareInfo()
+        if firmware_info['Image A is Running']:
+            active = 'A'
+        elif firmware_info['Image B is Running']:
+            active = 'B'
+        else:
+            raise ValueError('No image running flag is set.')
+        return '{major:d}.{minor:d}.{build:d}'.format(
+            major=firmware_info['Image {active} Major'.format(active=active)],
+            minor=firmware_info['Image {active} Minor'.format(active=active)],
+            build=firmware_info['Image {active} Build'.format(active=active)],
+        )
+
     def write_password(self, psw=0x00001011):
         '''
         Write password to Password Entry Area.

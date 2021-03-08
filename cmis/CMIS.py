@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from .constants import HW_TYPE, HW_SIG_PINS, GENERIC_SIG_MAPS
+from .cdb_apis import CdbApi
 from ._utils import check_range
 from ._types import RegisterValue, RegisterSequence
 from typing import Iterable
@@ -15,6 +16,7 @@ class CDB:
         """
         self.__cmis = cmis
         self.__cdb_idx = cdb_idx
+        self.__cdb_bank = self.__cdb_idx - 1
         self.__status_field_addr = 36 + cdb_idx # cdb1: 37, cdb2: 38
         self.__l_cdb_complete_bit = 5 + cdb_idx # cdb1: bit6, cdb2: bit7
     
@@ -46,7 +48,7 @@ class CDB:
         return bool(status)
 
     @ property
-    def result(self):
+    def last_command_result(self):
         """
         result code of last triggered CDB command.
         refer to CMIS specification for details.
@@ -66,6 +68,7 @@ class CDB:
         epl: bytes
         return: int
         """
+        cmd = cmd.to_bytes(2, 'big')
         bytes_len_lpl = len(lpl).to_bytes(1, 'big')
         bytes_len_epl = len(epl).to_bytes(2, 'big')
         return self.__calc_check_code(cmd, bytes_len_lpl, bytes_len_epl, lpl)
@@ -73,22 +76,26 @@ class CDB:
     def __calc_rlpl_check_code(self, rlpl):
         return self.__calc_check_code(rlpl)
 
-    def __call__(self, cmd, lpl):
+    def __call__(self, cmd, lpl=b'', epl=b'', timeout=0, _async=False):
         """
-        cmd: bytes
+        cmd: int
+        epl: bytes
         lpl: bytes
+        timeout: timeout to wait CDB complete
         """
-        return self.execute(cmd, lpl)
+        return self.execute(cmd, lpl, epl, timeout, _async)
 
     def execute(self, cmd, lpl=b'', epl=b'', timeout=0, _async=False):
         """
-        cmd: bytes
+        cmd: int
         epl: bytes
         lpl: bytes
         timeout: timeout to wait CDB complete
         """
         # check param type & length
-        for p in cmd, lpl, epl:
+        if not isinstance(cmd, int) or not 0 <= cmd <= 0xFFFF:
+            raise ValueError('Invalid type or value of cmd. Should be a 2-byte unsigned int.')
+        for p in lpl, epl:
             if not isinstance(p, bytes):
                 raise TypeError('cmd, lpl and epl should be bytes.')
         len_lpl = len(lpl)
@@ -110,38 +117,41 @@ class CDB:
             r = re.compile(b'.{1, 128}')
             paged_epl = r.findall(epl)
             for i in range(len(paged_epl)):
-                self.__cmis.select_bank_page(self.__cdb_idx - 1, 0xA0+i)
+                self.__cmis.select_bank_page(self.__cdb_bank, 0xA0+i)
                 self.__cmis.write_twi_register(128, paged_epl[i])
         # 2.write LPL
         if lpl:
+            self.__cmis.select_bank_page(self.__cdb_bank, 0x9F)
             self.__cmis.write_twi_register(136, lpl)
         # 3.write payloads length
+        self.__cmis.select_bank_page(self.__cdb_bank, 0x9F)
         self.__cmis[130:131] = len_epl
         self.__cmis[132] = len_lpl
         # 4.calc & write cdbCheckCode
         self.__cmis[133] = self.__calc_cdb_check_code(cmd, lpl, epl)
         # 5.write cmd to trigger module to execute the command
         self.__cmis[128:129] = cmd
-        # 6.wait for CDB complete
-        if _async:
-            return
+        # 6.wait for CDB complete and return results if not async
+        if not _async:
+            self.wait_for_complete(timeout=timeout)
+        success = not self.STS_FAIL
+        result = self.last_command_result
+        return success, result
         
-        check_status_period = 0.5
+    def wait_for_complete(self, interval=0.1, timeout=0):
         start_time = time.time()
         while True:
             if self.complete_flag:
                 break
-            if timeout:
+            elif timeout:
                 current_time = time.time()
                 time_spend = current_time - start_time
                 if time_spend > timeout:
-                    raise TimeoutError('timeout waiting CDB complete')
-            time.sleep(check_status_period)
-        success = not self.STS_FAIL
-        result = self.result
-        return success, result
-        
+                    raise TimeoutError('Timeout waiting for CDB complete flag: timeout={t}s'.format(t=timeout))
+            time.sleep(interval)
+
     def read_rlpl(self):
+        self.__cmis.select_bank_page(self.__cdb_bank, 0x9F)
         rlpl_len = self.__cmis[134]
         rlpl_chkcode = self.__cmis[135]
         if rlpl_len:
@@ -151,6 +161,8 @@ class CDB:
             if self.__calc_rlpl_check_code(rlpl) != rlpl_chkcode:
                 raise ValueError('RLPLChkCode verification failed.')
             return rlpl
+        else:
+            return b''
 
     def read_epl(self, d_len):
         # TODO: not implemented in module for now
@@ -171,6 +183,8 @@ class CMIS(ABC):
         self.__bank_select_addr = 0x7E
         self.__cdb1 = CDB(self, 1)
         self.__cdb2 = CDB(self, 2)
+        self.__cdb1_api = CdbApi(self.__cdb1)
+        self.__cdb2_api = CdbApi(self.__cdb2)
 
     @ property
     def page(self):
@@ -197,6 +211,14 @@ class CMIS(ABC):
     @ property
     def cdb2(self):
         return self.__cdb2
+
+    @ property
+    def cdb1_api(self):
+        return self.__cdb1_api
+
+    @ property
+    def cdb2_api(self):
+        return self.__cdb2_api
 
     def __getitem__(self, position):
         if isinstance(position, int):
