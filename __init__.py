@@ -1,6 +1,5 @@
-from .transceivers import OSFP, QsfpDD
+from .transceivers import OSFP, QsfpDD, constants
 
-__version__ = '0.2.0'
 
 TRX_MAP = {
     'OSFP': OSFP,

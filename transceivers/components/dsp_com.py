@@ -4,7 +4,7 @@ import math
 from ...cmis import CMIS
 import ctypes
 
-class CanopusCom:
+class DspCom:
     def __init__(self, trx: CMIS):
         self.__trx = trx
     

@@ -1,24 +1,35 @@
 from ..evb import CmisEVB
 from ..cmis import CMIS
 from .components.canopus_api import CanopusApi
-from .components.canopus_com import CanopusCom
+from .components.deneb_api import DenebApi
+from .components.dsp_com import DspCom
 from .components.vdm import Vdm
 from .components.ddm import Ddm
 from .components.flag import Flag
 from .components.dac import Dac
 from .components.adc import Adc
 from .components.abc import AutoBiasControl
+from .constants import DspType
 import time
 import math
 
+
 class CMISTrxBase(CMIS):
-    def __init__(self, ip, trx_type):
+    def __init__(self, ip, trx_type, dsp_type=DspType.Canopus):
         if not isinstance(ip, str):
             raise TypeError('ip should be a str in ip address format')
+        if not isinstance(dsp_type, DspType):
+            raise TypeError('dsp_type should be a DspType enum')
+        if dsp_type == DspType.Canopus:
+            DspApi = CanopusApi
+        elif dsp_type == DspType.Deneb:
+            DspApi = DenebApi
+        else:
+            raise ValueError('Invalid dsp_type: {!r}'.format(dsp_type))
         CMIS.__init__(self, trx_type)
         self.__ip = ip
         self.__evb = CmisEVB(host=ip, timeout=5)
-        self.__dsp = CanopusApi(CanopusCom(self))
+        self.__dsp = DspApi(DspCom(self))
         self.__vdm = Vdm(self)
         self.__ddm = Ddm(self)
         self.__flag = Flag(self)
