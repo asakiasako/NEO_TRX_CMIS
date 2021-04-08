@@ -1,9 +1,10 @@
 from .cmis_trx_base import CMISTrxBase
 from ..cmis import HW_TYPE
+from .constants import DspType
 
 class OSFP(CMISTrxBase):
-    def __init__(self, ip):
-        CMISTrxBase.__init__(self, ip, HW_TYPE.OSFP)
+    def __init__(self, ip, dsp_type=DspType.Deneb):
+        CMISTrxBase.__init__(self, ip, HW_TYPE.OSFP, dsp_type=dsp_type)
 
     def get_pin_state(self, pin_name):
         """
