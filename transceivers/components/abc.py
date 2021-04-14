@@ -13,12 +13,60 @@ class AutoBiasControl:
             'YQ': 5
         }
 
+    def is_enabled(self):
+        return bool(self.service_get())
+
+    def enable(self, state=True):
+        if state:
+            self.service_set(0x3F)
+        else:
+            self.service_set(0)
+
+    def disable(self):
+        return self.enable(state=False)
+
     def calc_cdb_chkcode(self, vals):
         chkcode = ctypes.c_ubyte(0)
         for b in vals:
             chkcode.value += b
         chkcode.value = - chkcode.value - 1
         return chkcode.value
+
+    def service_get(self):
+        while self.__trx.cdb1.STS_BUSY:
+            pass
+
+        self.__trx.select_bank_page(0, 0x9F)
+        cmd = bytearray(b'\x80\x00\x00\x00\x03\x00\x00\x00\x0f\x08\x06')
+        cmd[133-128] = self.calc_cdb_chkcode(cmd)
+        data = cmd[2:]
+        self.__trx[130: 130+len(data)-1] = data
+        self.__trx[128: 129] = cmd[:2]
+
+        while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
+            pass
+
+        if not self.__trx.cdb1.STS_BUSY and not self.__trx.cdb1.STS_FAIL:
+
+            rlplen = self.__trx[134]
+            rlp_chkcode = self.__trx[135]
+            rlp = self.__trx[136:136+rlplen-1]
+            if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
+                return (rlp[0] << 8) | rlp[1]
+
+    def service_set(self, val):
+        while self.__trx.cdb1.STS_BUSY:
+            pass
+        self.__trx.select_bank_page(0, 0x9F)
+        cmd = bytearray(b'\x80\x00\x00\x00\x05\x00\x00\x00\x0f\x08\x05\x00\x00')
+        cmd[-2] = (val >> 8) & 0xff
+        cmd[-1] = val & 0xff
+        cmd[133-128] = self.calc_cdb_chkcode(cmd)
+        data = cmd[2:]
+        self.__trx[130: 130+len(data)-1] = data
+        self.__trx[128: 129] = cmd[:2]
+        while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
+            pass
 
     def polarity_set(self, ph, val):
         if not ph in self.__PHASE_MAPPING:
