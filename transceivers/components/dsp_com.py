@@ -109,13 +109,13 @@ class DspCom:
         return self.api_epl(byteArray)
 
     def send_command(self, data):
-        print(data)
+        # print(data)
         length = len(data)
         i = 0
         while i < length:
             data[i] = data[i] & 0xff
             i += 1
-        print(data)
+        # print(data)
         rsp = self.api(bytearray(data))
-        print(rsp)
+        # print(rsp)
         return rsp

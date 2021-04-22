@@ -1,9 +1,10 @@
 from .cmis_trx_base import CMISTrxBase
 from ..cmis import HW_TYPE
+from .constants import DspType
 
 class QsfpDD(CMISTrxBase):
-    def __init__(self, ip):
-        CMISTrxBase.__init__(self, ip, HW_TYPE.QSFP_DD)
+    def __init__(self, ip, dsp_type=DspType.Deneb):
+        CMISTrxBase.__init__(self, ip, HW_TYPE.QSFP_DD, dsp_type=dsp_type)
 
     def get_pin_state(self, pin_name):
         """
