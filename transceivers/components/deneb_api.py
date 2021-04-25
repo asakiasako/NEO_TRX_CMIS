@@ -24,8 +24,7 @@ class DenebApi:
         self.apis_call_info_list = []
         self.add_api_exec_cb = lambda:None
         self.api_hash = [0xa2,0xca,0x41,0x43,0x30,0x0,0xc0,0x86,0xec,0xf8,0x54,0x2a]    # a2ca41433000c086ecf8542a7e947ec2368439cd
-    def check_response(self, apiResponse, rsp):#add by hao
-        pass
+
     def enable_fw_support(self, support):
         self.check_response = support.check_response
 

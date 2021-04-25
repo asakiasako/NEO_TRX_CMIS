@@ -24,8 +24,7 @@ class CanopusApi:
         self.apis_call_info_list = []
         self.add_api_exec_cb = lambda:None
         self.api_hash = [0x8f,0xa7,0x1d,0x4b,0xae,0x3d,0x9e,0xeb,0xf1,0x60,0x48,0x8c]    # 8fa71d4bae3d9eebf160488c1ce9d90257a47f30
-    def check_response(self, apiResponse, rsp):#add by hao
-        pass
+
     def enable_fw_support(self, support):
         self.check_response = support.check_response
 
