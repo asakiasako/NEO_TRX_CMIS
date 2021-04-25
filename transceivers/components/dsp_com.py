@@ -4,6 +4,12 @@ import math
 from ...cmis import CMIS
 import ctypes
 
+class DspFwSupport:
+    def check_response(self, response, api):
+        status = response['Status']
+        if status != 0:
+            raise ValueError('Dsp API response error: ERR_CODE={err:d}'.format(err=status))
+
 class DspCom:
     def __init__(self, trx: CMIS):
         self.__trx = trx

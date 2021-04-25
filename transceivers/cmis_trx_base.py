@@ -2,7 +2,7 @@ from ..evb import CmisEVB
 from ..cmis import CMIS
 from .components.canopus_api import CanopusApi
 from .components.deneb_api import DenebApi
-from .components.dsp_com import DspCom
+from .components.dsp_com import DspCom, DspFwSupport
 from .components.vdm import Vdm
 from .components.ddm import Ddm
 from .components.flag import Flag
@@ -30,6 +30,7 @@ class CMISTrxBase(CMIS):
         self.__ip = ip
         self.__evb = CmisEVB(host=ip, timeout=5)
         self.__dsp = DspApi(DspCom(self))
+        self.__dsp.enable_fw_support(DspFwSupport())
         self.__vdm = Vdm(self)
         self.__ddm = Ddm(self)
         self.__flag = Flag(self)
