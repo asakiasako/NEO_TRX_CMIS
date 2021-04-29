@@ -33,6 +33,11 @@ class AutoBiasControl:
         chkcode.value = - chkcode.value - 1
         return chkcode.value
 
+    def verify_cdb_chkcode(self, vals, expected):
+        chkcode = self.calc_cdb_chkcode(vals)
+        if chkcode != expected:
+            raise ValueError('Check code verify failed.')
+
     def service_get(self):
         while self.__trx.cdb1.STS_BUSY:
             pass
@@ -68,6 +73,8 @@ class AutoBiasControl:
         self.__trx[128: 129] = cmd[:2]
         while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
             pass
+
+
 
     def polarity_set(self, ph, val):
         if not ph in self.__PHASE_MAPPING:
@@ -117,8 +124,8 @@ class AutoBiasControl:
             rlplen = self.__trx[134]
             rlp_chkcode = self.__trx[135]
             rlp = self.__trx[136:136+rlplen-1]
-            if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
-                polarity = bool((rlp[0] << 8) | rlp[1])
+            self.verify_cdb_chkcode(rlp, rlp_chkcode)
+            polarity = bool((rlp[0] << 8) | rlp[1])
         else:
             raise ValueError('CDB Command Fail')
 
@@ -208,12 +215,12 @@ class AutoBiasControl:
             rlplen = self.__trx[134]
             rlp_chkcode = self.__trx[135]
             rlp = self.__trx[136:136+rlplen-1]
-            if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
-                p = struct.unpack('<1f', rlp[0:4])[0]
-                i = struct.unpack('<1f', rlp[4:8])[0]
-                d = struct.unpack('<1f', rlp[8:12])[0]
-                i_min = struct.unpack('<1f', rlp[12:16])[0]
-                i_max = struct.unpack('<1f', rlp[16:20])[0]
+            self.verify_cdb_chkcode(rlp, rlp_chkcode)
+            p = struct.unpack('<1f', rlp[0:4])[0]
+            i = struct.unpack('<1f', rlp[4:8])[0]
+            d = struct.unpack('<1f', rlp[8:12])[0]
+            i_min = struct.unpack('<1f', rlp[12:16])[0]
+            i_max = struct.unpack('<1f', rlp[16:20])[0]
         else:
             raise ValueError('CDB Command Fail')
 
@@ -249,13 +256,13 @@ class AutoBiasControl:
             rlplen = self.__trx[134]
             rlp_chkcode = self.__trx[135]
             rlp = self.__trx[136:136+rlplen-1]
-            if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
-                b = bytearray()
-                b.append(rlp[1])
-                b.append(rlp[0])
-                b.append(rlp[3])
-                b.append(rlp[2])
-                target = struct.unpack('<f', b)[0]
+            self.verify_cdb_chkcode(rlp, rlp_chkcode)
+            b = bytearray()
+            b.append(rlp[1])
+            b.append(rlp[0])
+            b.append(rlp[3])
+            b.append(rlp[2])
+            target = struct.unpack('<f', b)[0]
         else:
             raise ValueError('CDB Command Fail')
 
@@ -322,14 +329,72 @@ class AutoBiasControl:
             rlplen = self.__trx[134]
             rlp_chkcode = self.__trx[135]
             rlp = self.__trx[136:136+rlplen-1]
-            if self.calc_cdb_chkcode(rlp) == rlp_chkcode:
-                b = bytearray()
-                b.append(rlp[1])
-                b.append(rlp[0])
-                b.append(rlp[3])
-                b.append(rlp[2])
-                demod = struct.unpack('<1f', b)[0] 
+            self.verify_cdb_chkcode(rlp, rlp_chkcode)
+            b = bytearray()
+            b.append(rlp[1])
+            b.append(rlp[0])
+            b.append(rlp[3])
+            b.append(rlp[2])
+            demod = struct.unpack('<1f', b)[0] 
         else:
             raise ValueError('CDB Command Fail')
 
         return demod
+
+    def method_get(self, phase):
+        
+        if not phase in self.__PHASE_MAPPING:
+            raise KeyError('Invalid phase for ABC: {!r}'.format(phase))
+
+        idx_ph = self.__PHASE_MAPPING[phase]
+
+        while self.__trx.cdb1.STS_BUSY:
+            pass
+
+        self.__trx.select_bank_page(0, 0x9F)
+        cmd = bytearray(b'\x80\x00\x00\x00\x05\x00\x00\x00\x0f\x08\x08\x00\x00')
+        cmd[-2] = (idx_ph >> 8) & 0xff
+        cmd[-1] = idx_ph & 0xff
+
+        cmd[133-128] = self.calc_cdb_chkcode(cmd)
+        data = cmd[2:]
+        self.__trx[130: 130+len(data)-1] = data
+        self.__trx[128:129] = cmd[:2]
+        while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
+            pass
+
+        if not self.__trx.cdb1.STS_BUSY and not self.__trx.cdb1.STS_FAIL:
+            rlplen = self.__trx[134]
+            rlp_chkcode = self.__trx[135]
+            rlp = self.__trx[136:136+rlplen-1]
+            self.verify_cdb_chkcode(rlp, rlp_chkcode)
+            method = (rlp[0] << 8) | rlp[1]
+        else:
+            raise ValueError('CDB Command Fail')
+
+        return method
+        
+
+    def method_set(self, phase, val):
+
+        if not phase in self.__PHASE_MAPPING:
+            raise KeyError('Invalid phase for ABC: {!r}'.format(phase))
+
+        idx_ph = self.__PHASE_MAPPING[phase]
+
+        while self.__trx.cdb1.STS_BUSY:
+            pass
+
+        self.__trx.select_bank_page(0, 0x9F)
+        cmd = bytearray(b'\x80\x00\x00\x00\x07\x00\x00\x00\x0f\x08\x07\x00\x00\x00\x00')
+        cmd[-4] = (idx_ph >> 8) & 0xff
+        cmd[-3] = idx_ph & 0xff        
+        cmd[-2] = (val >> 8) & 0xff
+        cmd[-1] = val & 0xff
+
+        cmd[133-128] = self.calc_cdb_chkcode(cmd)
+        data = cmd[2:]
+        self.__trx[130: 130+len(data)-1] = data
+        self.__trx[128:129] = cmd[:2]
+        while self.__trx.cdb1.STS_BUSY or self.__trx[37] == 0:
+            pass
