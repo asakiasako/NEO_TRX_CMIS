@@ -1,43 +1,95 @@
 import time
+from transceivers.cmis_trx_base import CMISTrxBase
+from types import MappingProxyType
+from collections import namedtuple
+import math
+
+VdmInfo = namedtuple('VdmInfo', 'index data_type dimension')
 
 class Vdm:
+    """
+    call Vdm.init_vdm_mapping() once before any vdm operation
+    # VDM Config pages: 20h, 21h, 22h, 23h
+    # VDM Real Value pages: 24h, 25h, 26h, 27h
+    """
+    DATA_TYPE_U16 = 1
+    DATA_TYPE_S16 = 2
+    DATA_TYPE_F16 = 3
+
+    CONFIG_CODE_MAPPING = MappingProxyType({
+        # config_code: [data_type, key, dimension]
+        9 : [DATA_TYPE_F16, "Media Pre-FEC Minimum", 1],
+        11 : [DATA_TYPE_F16, "Media Pre-FEC Maximum", 1],
+        13 : [DATA_TYPE_F16, "Media Pre-FEC Average", 1],
+        15 : [DATA_TYPE_F16, "Media Pre-FEC Current", 1],
+        17 : [DATA_TYPE_F16, "Media Post-FEC Minimum", 1],
+        19 : [DATA_TYPE_F16, "Media Post-FEC Maximum", 1],
+        21 : [DATA_TYPE_F16, "Media Post-FEC Average", 1],
+        23 : [DATA_TYPE_F16, "Media Post-FEC Current", 1],
+
+        10 : [DATA_TYPE_F16, "Host Pre-FEC Minimum", 1],
+        12 : [DATA_TYPE_F16, "Host Pre-FEC Maximum", 1],
+        14 : [DATA_TYPE_F16, "Host Pre-FEC Average", 1],
+        16 : [DATA_TYPE_F16, "Host Pre-FEC Current", 1],
+        18 : [DATA_TYPE_F16, "Host Post-FEC Minimum", 1],
+        20 : [DATA_TYPE_F16, "Host Post-FEC Maximum", 1],
+        22 : [DATA_TYPE_F16, "Host Post-FEC Average", 1],
+        24 : [DATA_TYPE_F16, "Host Post-FEC Current", 1],
+
+        134 : [DATA_TYPE_S16, "CD", 1],
+        136 : [DATA_TYPE_U16, "DGD", 1],
+        138 : [DATA_TYPE_U16, "PDL", 1],
+        141 : [DATA_TYPE_S16, "CFO", 1],
+        142 : [DATA_TYPE_U16, "EVM", 1],
+        139 : [DATA_TYPE_U16, "OSNR", 0.1],
+        140 : [DATA_TYPE_U16, "ESNR", 0.1],
+
+        4 : [DATA_TYPE_S16, "Laser Temp", 1/256],
+        143 : [DATA_TYPE_S16, "Tx Power", 0.01],
+        144 : [DATA_TYPE_S16, "Rx Total Power", 0.01],
+        145 : [DATA_TYPE_S16, "Rx Sig Power", 0.01],
+        128 : [DATA_TYPE_U16, "BIAS_XI", 100/65535],
+        129 : [DATA_TYPE_U16, "BIAS_XQ", 100/65535],
+        132 : [DATA_TYPE_U16, "BIAS_XP", 100/65535],
+        130 : [DATA_TYPE_U16, "BIAS_YI", 100/65535],
+        131 : [DATA_TYPE_U16, "BIAS_YQ", 100/65535],
+        133 : [DATA_TYPE_U16, "BIAS_YP", 100/65535],
+    })
 
     def __init__(self, trx):
         self.__trx = trx
-        self.__keys = (
-            'Media Min Pre',
-            'Media Max Pre',
-            'Media Avg Pre',
-            'Media Cur Pre',
-            'Host Min Pre',
-            'Host Max Pre',
-            'Host Avg Pre',
-            'Host Cur Pre',
-            'Media Min Post',
-            'Media Max Post',
-            'Media Avg Post',
-            'Media Cur Post',
-            'Host Min Post',
-            'Host Max Post',
-            'Host Avg Post',
-            'Host Cur Post',
-            'CD',               # ps/nm
-            'DGD',              # ps
-            'PDL',              # db
-            'CFO',              # MHZ
-            'EVM',
-            'Laser Temp',       # C
-            'Tx Power',         # dBm
-            'Rx Sig Power',     # dBm
-            'Rx Total Power',   # dBm
-        )
+        self.__vdm_mapping = None
     
     def __getitem__(self, key):
         return self.__get_vdm(key)
 
+    def init_vdm_mapping(self):
+        config_pages = [0x20, 0x21, 0x22, 0x23]
+        vdm_mapping = {}
+        for idx_page, page in enumerate(config_pages):
+            self.__trx.page = page
+            b_full_page = self.__trx[128,255]
+            config_codes = [int.from_bytes(b_full_page[2*i: 2*i+2]) for i in range(64)]
+            for idx_config, i_code in config_codes:
+                if i_code in self.CONFIG_CODE_MAPPING:
+                    d_type, key, dim = self.CONFIG_CODE_MAPPING[i_code]
+                    vdm_mapping[key] = VdmInfo(
+                        index=idx_config+idx_page*64+1,
+                        data_type=d_type,
+                        dimension=dim
+                    )
+        self.__vdm_mapping = vdm_mapping
+
+    @property
+    def vdm_ampping(self):
+        if self.__vdm_mapping is None:
+            raise ValueError('Please call init_vdm_mapping before any vdm operation.')
+        else:
+            return self.__vdm_mapping
+
     @property
     def keys(self):
-        return self.__keys
+        return self.vdm_ampping.keys()
 
     @property
     def FreezeRequest(self):
@@ -73,73 +125,31 @@ class Vdm:
         while not self.UnfreezeDone:
             time.sleep(0.05)
 
-    def __parse_ber(self, raw):
-        return (raw & 0x7ff) * 10**((raw >> 11) - 24)
+    def __parse_data(self, raw, data_type, dimension):
+        if data_type == self.DATA_TYPE_U16:
+            val = raw.to_unsigned()
+        elif data_type == self.DATA_TYPE_S16:
+            val = raw.to_signed()
+        elif data_type == self.DATA_TYPE_F16:
+            u_int_val = raw.to_unsigned()
+            val = (u_int_val & 0x7FF) * 10**((u_int_val >> 11) - 24)
+        else:
+            raise ValueError('Invalid data_type: {:!r}'.format(data_type))
+        if val != 1:
+            val *= dimension
+        return val
+
+    def __calc_page_reg_from_vdm_index(self, index):
+        page = math.ceil(index/64) + 0x24 - 1
+        reg_addr = ((index-1) % 64) * 2 + 128
+        return page, reg_addr
 
     def __get_vdm(self, key):
         if key not in self.keys:
-            raise KeyError('Invalid key for VDM: {key}'.format(key=key))
-        # Pre-FEC BER
-        if key=='Media Min Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 128:129].to_unsigned())
-        if key=='Media Max Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 130:131].to_unsigned())
-        if key=='Media Avg Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 132:133].to_unsigned())
-        if key=='Media Cur Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 134:135].to_unsigned())
-        if key=='Host Min Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 136:137].to_unsigned())
-        if key=='Host Max Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 138:139].to_unsigned())
-        if key=='Host Avg Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 140:141].to_unsigned())
-        if key=='Host Cur Pre':
-            return self.__parse_ber(self.__trx[0, 0x24, 142:143].to_unsigned())
-        # Post-FEC BER
-        if key=='Media Min Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 162:163].to_unsigned())
-        if key=='Media Max Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 164:165].to_unsigned())
-        if key=='Media Avg Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 166:167].to_unsigned())
-        if key=='Media Cur Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 168:169].to_unsigned())
-        if key=='Host Min Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 170:171].to_unsigned())
-        if key=='Host Max Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 172:173].to_unsigned())
-        if key=='Host Avg Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 174:175].to_unsigned())
-        if key=='Host Cur Post':
-            return self.__parse_ber(self.__trx[0, 0x24, 176:177].to_unsigned())
-        # Others      
-        if key=='CD':
-            # ps/nm
-            return self.__trx[0, 0x24, 144:145].to_signed()
-        if key=='DGD':
-            # ps
-            return self.__trx[0, 0x24, 146:147].to_unsigned()*0.01
-        if key=='PDL':
-            # dB
-            return self.__trx[0, 0x24, 148:149].to_unsigned()*0.1
-        if key=='CFO':
-            # MHz
-            return self.__trx[0, 0x24, 150:151].to_signed()
-        if key=='EVM':
-            # normalization to 1
-            return self.__trx[0, 0x24, 152:153].to_unsigned()*100/65535
-        if key=='Laser Temp':
-            # C
-            return self.__trx[0, 0x24, 154:155].to_signed()/256
-        if key=='Tx Power':
-            # dBm
-            return self.__trx[0, 0x24, 156:157].to_signed()*0.01
-        if key=='Rx Sig Power':
-            # dBm
-            return self.__trx[0, 0x24, 158:159].to_signed()*0.01
-        if key=='Rx Total Power':
-            # dBm
-            return self.__trx[0, 0x24, 160:161].to_signed()*0.01
-        
-        raise KeyError('Method to get VDM not exist: {key}'.format(key=key))
+            raise KeyError('Invalid key for VDM: {key}. Not configured in VDM Configuration pages.'.format(key=key))
+        vdm_info = self.vdm_ampping[key]
+        index, data_type = vdm_info
+        page, reg_addr = self.__calc_page_reg_from_vdm_index(index)
+        raw = self.__trx[page, reg_addr: reg_addr+1]
+        val = self.__parse_data(raw, data_type)
+        return val
