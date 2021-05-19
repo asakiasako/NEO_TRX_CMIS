@@ -1,5 +1,4 @@
 import time
-from transceivers.cmis_trx_base import CMISTrxBase
 from types import MappingProxyType
 from collections import namedtuple
 import math
@@ -68,9 +67,9 @@ class Vdm:
         vdm_mapping = {}
         for idx_page, page in enumerate(config_pages):
             self.__trx.page = page
-            b_full_page = self.__trx[128,255]
-            config_codes = [int.from_bytes(b_full_page[2*i: 2*i+2]) for i in range(64)]
-            for idx_config, i_code in config_codes:
+            b_full_page = self.__trx[128:255]
+            config_codes = [int.from_bytes(b_full_page[2*i+1: 2*i+2], 'big') for i in range(64)]
+            for idx_config, i_code in enumerate(config_codes):
                 if i_code in self.CONFIG_CODE_MAPPING:
                     d_type, key, dim = self.CONFIG_CODE_MAPPING[i_code]
                     vdm_mapping[key] = VdmInfo(
@@ -81,7 +80,7 @@ class Vdm:
         self.__vdm_mapping = vdm_mapping
 
     @property
-    def vdm_ampping(self):
+    def mapping(self):
         if self.__vdm_mapping is None:
             raise ValueError('Please call init_vdm_mapping before any vdm operation.')
         else:
@@ -89,7 +88,7 @@ class Vdm:
 
     @property
     def keys(self):
-        return self.vdm_ampping.keys()
+        return self.mapping.keys()
 
     @property
     def FreezeRequest(self):
@@ -147,9 +146,9 @@ class Vdm:
     def __get_vdm(self, key):
         if key not in self.keys:
             raise KeyError('Invalid key for VDM: {key}. Not configured in VDM Configuration pages.'.format(key=key))
-        vdm_info = self.vdm_ampping[key]
-        index, data_type = vdm_info
+        vdm_info = self.mapping[key]
+        index, data_type, dimension = vdm_info
         page, reg_addr = self.__calc_page_reg_from_vdm_index(index)
         raw = self.__trx[page, reg_addr: reg_addr+1]
-        val = self.__parse_data(raw, data_type)
+        val = self.__parse_data(raw, data_type, dimension)
         return val
