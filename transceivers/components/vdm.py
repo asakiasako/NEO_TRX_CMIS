@@ -46,7 +46,7 @@ class Vdm:
         4:   [DATA_TYPE_S16, "Laser Temp", 1/256],
         143: [DATA_TYPE_S16, "Tx Power", 0.01],
         144: [DATA_TYPE_S16, "Rx Total Power", 0.01],
-        145: [DATA_TYPE_S16, "Rx Sig Power", 0.01],
+        145: [DATA_TYPE_S16, "Rx Signal Power", 0.01],
         128: [DATA_TYPE_U16, "BIAS_XI", 100/65535],
         129: [DATA_TYPE_U16, "BIAS_XQ", 100/65535],
         132: [DATA_TYPE_U16, "BIAS_XP", 100/65535],
@@ -66,7 +66,7 @@ class Vdm:
         config_pages = [0x20, 0x21, 0x22, 0x23]
         vdm_mapping = {}
         for idx_page, page in enumerate(config_pages):
-            self.__trx.page = page
+            self.__trx.select_bank_page(0, page)
             b_full_page = self.__trx[128:255]
             config_codes = [int.from_bytes(b_full_page[2*i+1: 2*i+2], 'big') for i in range(64)]
             for idx_config, i_code in enumerate(config_codes):
@@ -149,6 +149,6 @@ class Vdm:
         vdm_info = self.mapping[key]
         index, data_type, dimension = vdm_info
         page, reg_addr = self.__calc_page_reg_from_vdm_index(index)
-        raw = self.__trx[page, reg_addr: reg_addr+1]
+        raw = self.__trx[0, page, reg_addr: reg_addr+1]
         val = self.__parse_data(raw, data_type, dimension)
         return val
