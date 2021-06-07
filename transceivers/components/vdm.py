@@ -36,10 +36,10 @@ class Vdm:
         24:  [DATA_TYPE_F16, "Host Post-FEC Current", 1],
 
         134: [DATA_TYPE_S16, "CD", 1],
-        136: [DATA_TYPE_U16, "DGD", 1],
-        138: [DATA_TYPE_U16, "PDL", 1],
+        136: [DATA_TYPE_U16, "DGD", 0.01],
+        138: [DATA_TYPE_U16, "PDL", 0.1],
         141: [DATA_TYPE_S16, "CFO", 1],
-        142: [DATA_TYPE_U16, "EVM", 1],
+        142: [DATA_TYPE_U16, "EVM", 100/65535],
         139: [DATA_TYPE_U16, "OSNR", 0.1],
         140: [DATA_TYPE_U16, "ESNR", 0.1],
 
