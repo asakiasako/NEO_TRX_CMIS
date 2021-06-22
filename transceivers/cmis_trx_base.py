@@ -8,9 +8,9 @@ from .components.ddm import Ddm
 from .components.flag import Flag
 from .components.dac import Dac
 from .components.adc import Adc
+from .components.dpin import DPin
 from .components.abc import AutoBiasControl
 from .constants import DspType
-import time
 import math
 
 
@@ -37,6 +37,7 @@ class CMISTrxBase(CMIS):
         self.__dac = Dac(self)
         self.__adc = Adc(self)
         self.__abc = AutoBiasControl(self)
+        self.__dpin = DPin(self)
 
     def __enter__(self):
         self.connect()
@@ -75,6 +76,10 @@ class CMISTrxBase(CMIS):
     @property
     def adc(self):
         return self.__adc
+
+    @property
+    def dpin(self):
+        return self.__dpin
 
     @property
     def abc(self):
