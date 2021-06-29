@@ -2,7 +2,7 @@ import socket
 from . import id_maps
 from .constants import CLIENT_CONF, ERROR_CODES
 import re
-from gevent.lock import BoundedSemaphore
+from threading import Lock
 
 class CmisEVB(object):
     
@@ -17,7 +17,7 @@ class CmisEVB(object):
         self.__id_maps = id_maps.id_maps
         self.host = host
         self.port = port
-        self.__lock = BoundedSemaphore()
+        self.__lock = Lock()
     
     def __enter__(self):
         return self
