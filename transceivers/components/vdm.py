@@ -1,5 +1,4 @@
 import time
-from transceivers.cmis_trx_base import CMISTrxBase
 from types import MappingProxyType
 from collections import namedtuple
 import math
@@ -18,44 +17,44 @@ class Vdm:
 
     CONFIG_CODE_MAPPING = MappingProxyType({
         # config_code: [data_type, key, dimension]
-        9 : [DATA_TYPE_F16, "Media Pre-FEC Minimum", 1],
-        11 : [DATA_TYPE_F16, "Media Pre-FEC Maximum", 1],
-        13 : [DATA_TYPE_F16, "Media Pre-FEC Average", 1],
-        15 : [DATA_TYPE_F16, "Media Pre-FEC Current", 1],
-        17 : [DATA_TYPE_F16, "Media Post-FEC Minimum", 1],
-        19 : [DATA_TYPE_F16, "Media Post-FEC Maximum", 1],
-        21 : [DATA_TYPE_F16, "Media Post-FEC Average", 1],
-        23 : [DATA_TYPE_F16, "Media Post-FEC Current", 1],
+        9:   [DATA_TYPE_F16, "Media Pre-FEC Minimum", 1],
+        11:  [DATA_TYPE_F16, "Media Pre-FEC Maximum", 1],
+        13:  [DATA_TYPE_F16, "Media Pre-FEC Average", 1],
+        15:  [DATA_TYPE_F16, "Media Pre-FEC Current", 1],
+        17:  [DATA_TYPE_F16, "Media Post-FEC Minimum", 1],
+        19:  [DATA_TYPE_F16, "Media Post-FEC Maximum", 1],
+        21:  [DATA_TYPE_F16, "Media Post-FEC Average", 1],
+        23:  [DATA_TYPE_F16, "Media Post-FEC Current", 1],
 
-        10 : [DATA_TYPE_F16, "Host Pre-FEC Minimum", 1],
-        12 : [DATA_TYPE_F16, "Host Pre-FEC Maximum", 1],
-        14 : [DATA_TYPE_F16, "Host Pre-FEC Average", 1],
-        16 : [DATA_TYPE_F16, "Host Pre-FEC Current", 1],
-        18 : [DATA_TYPE_F16, "Host Post-FEC Minimum", 1],
-        20 : [DATA_TYPE_F16, "Host Post-FEC Maximum", 1],
-        22 : [DATA_TYPE_F16, "Host Post-FEC Average", 1],
-        24 : [DATA_TYPE_F16, "Host Post-FEC Current", 1],
+        10:  [DATA_TYPE_F16, "Host Pre-FEC Minimum", 1],
+        12:  [DATA_TYPE_F16, "Host Pre-FEC Maximum", 1],
+        14:  [DATA_TYPE_F16, "Host Pre-FEC Average", 1],
+        16:  [DATA_TYPE_F16, "Host Pre-FEC Current", 1],
+        18:  [DATA_TYPE_F16, "Host Post-FEC Minimum", 1],
+        20:  [DATA_TYPE_F16, "Host Post-FEC Maximum", 1],
+        22:  [DATA_TYPE_F16, "Host Post-FEC Average", 1],
+        24:  [DATA_TYPE_F16, "Host Post-FEC Current", 1],
 
-        134 : [DATA_TYPE_S16, "CD", 1],
-        136 : [DATA_TYPE_U16, "DGD", 1],
-        138 : [DATA_TYPE_U16, "PDL", 1],
-        141 : [DATA_TYPE_S16, "CFO", 1],
-        142 : [DATA_TYPE_U16, "EVM", 1],
-        139 : [DATA_TYPE_U16, "OSNR", 0.1],
-        140 : [DATA_TYPE_U16, "ESNR", 0.1],
-        147 : [DATA_TYPE_U16, "MER", 0.1],
+        134: [DATA_TYPE_S16, "CD", 1],
+        136: [DATA_TYPE_U16, "DGD", 0.01],
+        138: [DATA_TYPE_U16, "PDL", 0.1],
+        141: [DATA_TYPE_S16, "CFO", 1],
+        142: [DATA_TYPE_U16, "EVM", 100/65535],
+        139: [DATA_TYPE_U16, "OSNR", 0.1],
+        140: [DATA_TYPE_U16, "ESNR", 0.1],
+        147: [DATA_TYPE_U16, "MER", 0.1],
 
-        4 : [DATA_TYPE_S16, "Laser Temp", 1/256],
-        143 : [DATA_TYPE_S16, "Tx Power", 0.01],
-        144 : [DATA_TYPE_S16, "Rx Total Power", 0.01],
-        145 : [DATA_TYPE_S16, "Rx Sig Power", 0.01],
-        128 : [DATA_TYPE_U16, "BIAS_XI", 100/65535],
-        129 : [DATA_TYPE_U16, "BIAS_XQ", 100/65535],
-        132 : [DATA_TYPE_U16, "BIAS_XP", 100/65535],
-        130 : [DATA_TYPE_U16, "BIAS_YI", 100/65535],
-        131 : [DATA_TYPE_U16, "BIAS_YQ", 100/65535],
-        133 : [DATA_TYPE_U16, "BIAS_YP", 100/65535],
-        2 : [DATA_TYPE_S16, "TEC_CUR", 100/32767]
+        4:   [DATA_TYPE_S16, "Laser Temp", 1/256],
+        143: [DATA_TYPE_S16, "Tx Power", 0.01],
+        144: [DATA_TYPE_S16, "Rx Total Power", 0.01],
+        145: [DATA_TYPE_S16, "Rx Signal Power", 0.01],
+        128: [DATA_TYPE_U16, "BIAS_XI", 100/65535],
+        129: [DATA_TYPE_U16, "BIAS_XQ", 100/65535],
+        132: [DATA_TYPE_U16, "BIAS_XP", 100/65535],
+        130: [DATA_TYPE_U16, "BIAS_YI", 100/65535],
+        131: [DATA_TYPE_U16, "BIAS_YQ", 100/65535],
+        133: [DATA_TYPE_U16, "BIAS_YP", 100/65535],
+        2:   [DATA_TYPE_S16, "TEC_CUR", 100/32767]
     })
 
     def __init__(self, trx):
@@ -69,10 +68,10 @@ class Vdm:
         config_pages = [0x20, 0x21, 0x22, 0x23]
         vdm_mapping = {}
         for idx_page, page in enumerate(config_pages):
-            self.__trx.page = page
-            b_full_page = self.__trx[128,255]
-            config_codes = [int.from_bytes(b_full_page[2*i: 2*i+2]) for i in range(64)]
-            for idx_config, i_code in config_codes:
+            self.__trx.select_bank_page(0, page)
+            b_full_page = self.__trx[128:255]
+            config_codes = [int.from_bytes(b_full_page[2*i+1: 2*i+2], 'big') for i in range(64)]
+            for idx_config, i_code in enumerate(config_codes):
                 if i_code in self.CONFIG_CODE_MAPPING:
                     d_type, key, dim = self.CONFIG_CODE_MAPPING[i_code]
                     vdm_mapping[key] = VdmInfo(
@@ -83,7 +82,7 @@ class Vdm:
         self.__vdm_mapping = vdm_mapping
 
     @property
-    def vdm_ampping(self):
+    def mapping(self):
         if self.__vdm_mapping is None:
             raise ValueError('Please call init_vdm_mapping before any vdm operation.')
         else:
@@ -91,7 +90,7 @@ class Vdm:
 
     @property
     def keys(self):
-        return self.vdm_ampping.keys()
+        return self.mapping.keys()
 
     @property
     def FreezeRequest(self):
@@ -149,9 +148,9 @@ class Vdm:
     def __get_vdm(self, key):
         if key not in self.keys:
             raise KeyError('Invalid key for VDM: {key}. Not configured in VDM Configuration pages.'.format(key=key))
-        vdm_info = self.vdm_ampping[key]
-        index, data_type = vdm_info
+        vdm_info = self.mapping[key]
+        index, data_type, dimension = vdm_info
         page, reg_addr = self.__calc_page_reg_from_vdm_index(index)
-        raw = self.__trx[page, reg_addr: reg_addr+1]
-        val = self.__parse_data(raw, data_type)
+        raw = self.__trx[0, page, reg_addr: reg_addr+1]
+        val = self.__parse_data(raw, data_type, dimension)
         return val
