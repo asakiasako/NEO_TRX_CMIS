@@ -43,6 +43,7 @@ class Vdm:
         142 : [DATA_TYPE_U16, "EVM", 1],
         139 : [DATA_TYPE_U16, "OSNR", 0.1],
         140 : [DATA_TYPE_U16, "ESNR", 0.1],
+        147 : [DATA_TYPE_U16, "MER", 0.1],
 
         4 : [DATA_TYPE_S16, "Laser Temp", 1/256],
         143 : [DATA_TYPE_S16, "Tx Power", 0.01],
@@ -54,6 +55,7 @@ class Vdm:
         130 : [DATA_TYPE_U16, "BIAS_YI", 100/65535],
         131 : [DATA_TYPE_U16, "BIAS_YQ", 100/65535],
         133 : [DATA_TYPE_U16, "BIAS_YP", 100/65535],
+        2 : [DATA_TYPE_S16, "TEC_CUR", 100/32767]
     })
 
     def __init__(self, trx):
