@@ -1,4 +1,5 @@
 import struct
+import time
 
 class CdbApi:
 
@@ -151,7 +152,13 @@ class CdbApi:
         delay_to_reset: <int> unit in ms
         """
         lpl = bytes([0, reset_mode]) + int.to_bytes(delay_to_reset, 2, 'big')
-        success, last_command_result = self.__cdb(0x0109, lpl=lpl)
+        self.__cdb(0x0109, lpl=lpl, _async=True)
+
+        time.sleep(2) # CMIS: TWI should ready in 2s after run image
+        # self.__cdb.wait_for_complete()
+        success = not self.__cdb.STS_FAIL
+        last_command_result = self.__cdb.last_command_result
+
         if not success:
             last_command_result_desc_map = {
                 0b000000: 'Failed, no specific failure code',

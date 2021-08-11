@@ -122,7 +122,7 @@ class CDB:
         # 2.write LPL
         if lpl:
             self.__cmis.select_bank_page(self.__cdb_bank, 0x9F)
-            self.__cmis.write_twi_register(136, lpl)
+            self.__cmis.write_twi_register(bytes([136]), lpl)
         # 3.write payloads length
         self.__cmis.select_bank_page(self.__cdb_bank, 0x9F)
         self.__cmis[130:131] = len_epl
@@ -134,9 +134,9 @@ class CDB:
         # 6.wait for CDB complete and return results if not async
         if not _async:
             self.wait_for_complete(timeout=timeout)
-        success = not self.STS_FAIL
-        result = self.last_command_result
-        return success, result
+            success = not self.STS_FAIL
+            result = self.last_command_result
+            return success, result
         
     def wait_for_complete(self, interval=0.1, timeout=0):
         start_time = time.time()

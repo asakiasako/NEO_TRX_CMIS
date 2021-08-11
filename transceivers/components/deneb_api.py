@@ -6,7 +6,7 @@
 ####################################################
 
 
-from deneb_enum import *
+from .deneb_enum import *
 
 class RspHeader:
    def __init__(self): #Elements will be added later
