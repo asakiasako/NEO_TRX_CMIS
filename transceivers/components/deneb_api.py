@@ -6,7 +6,7 @@
 ####################################################
 
 
-from .deneb_enum import *
+from deneb_enum import *
 
 class RspHeader:
    def __init__(self): #Elements will be added later
@@ -23,7 +23,7 @@ class DenebApi:
         self.com = com
         self.apis_call_info_list = []
         self.add_api_exec_cb = lambda:None
-        self.api_hash = [0xa2,0xca,0x41,0x43,0x30,0x0,0xc0,0x86,0xec,0xf8,0x54,0x2a]    # a2ca41433000c086ecf8542a7e947ec2368439cd
+        self.api_hash = [0x8,0x3e,0xf1,0x4b,0xa8,0x7,0xf3,0x32,0x11,0xf7,0x73,0x6]    # 083ef14ba807f33211f77306b113c42374967958
 
     def enable_fw_support(self, support):
         self.check_response = support.check_response
@@ -1265,6 +1265,48 @@ class DenebApi:
         self.add_api_exec_cb()
         return apiResponse
 
+    def SetAlarmPinMode (self, TSF_enable, PROT_SW_enable, DEGM_intervals, DEGTHR_treshold, squelch_CA):
+        #Default header
+        header=ArgHeader()
+        header.Length = 16
+        header.Command = 0x264
+        header.Tag = 0
+        header.MaxResponse = 4
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*16
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = TSF_enable>>0
+        # assert: (x >= 0 && x <= 1)
+        command_array[9] = PROT_SW_enable>>0
+        # assert: (x >= 0 && x <= 1)
+        command_array[10] = DEGM_intervals>>0
+        command_array[11] = DEGTHR_treshold>>0
+        command_array[12] = DEGTHR_treshold>>8
+        command_array[13] = squelch_CA>>0
+        # assert: (x >= 0 && x <= 1)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.SetAlarmPinMode)
+        self.add_api_exec_cb()
+        return apiResponse
+
     def ReadRegister (self, address):
         #Default header
         header=ArgHeader()
@@ -1697,7 +1739,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 8
-        header.Command = 0x23F
+        header.Command = 0x267
         header.Tag = 0
         header.MaxResponse = 8
         header.Reserved = 0
@@ -1784,7 +1826,7 @@ class DenebApi:
         command_array[8] = reserved_0>>0
         # assert: (x >= 0 && x <= 2) || (x >= 4 && x <= 9)
         command_array[9] = line_fec>>0
-        # assert: (x >= 2 && x <= 4) || (x >= 9 && x <= 10)
+        # assert: (x >= 2 && x <= 4) || (x >= 9 && x <= 11)
         command_array[10] = line_modulation>>0
         # assert: (x == 4) || (x == 6) || (x == 8)
         command_array[11] = bcd_mode>>0
@@ -2401,6 +2443,156 @@ class DenebApi:
              'Info' : (response[3] & 0xFF),
         }
         self.check_response(apiResponse, DenebApi.ResetTransceiver)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def SetOtnOhpSinkCsfConsequentActionConfig (self, channel, csf_ca_enable):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x2A5
+        header.Tag = 0
+        header.MaxResponse = 4
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = channel>>0
+        # assert: (x >= 0 && x <= 4)
+        command_array[9] = csf_ca_enable>>0
+        # assert: (x >= 0 && x <= 1)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.SetOtnOhpSinkCsfConsequentActionConfig)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def GetOtnOhpSinkCsfConsequentActionConfig (self, channel):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x2A4
+        header.Tag = 0
+        header.MaxResponse = 8
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = channel>>0
+        # assert: (x >= 0 && x <= 4)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'csf_ca_enable' : (response[4] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.GetOtnOhpSinkCsfConsequentActionConfig)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def SetOtnOhpSinkMsiConsequentActionConfig (self, channel, map_level, msim_ca_enable):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x2A6
+        header.Tag = 0
+        header.MaxResponse = 4
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = channel>>0
+        # assert: (x >= 0 && x <= 4)
+        command_array[9] = map_level>>0
+        # assert: (x >= 0 && x <= 3)
+        command_array[10] = msim_ca_enable>>0
+        # assert: (x >= 0 && x <= 1)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.SetOtnOhpSinkMsiConsequentActionConfig)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def GetOtnOhpSinkMsiConsequentActionConfig (self, channel, map_level):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x2A7
+        header.Tag = 0
+        header.MaxResponse = 8
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = channel>>0
+        # assert: (x >= 0 && x <= 4)
+        command_array[9] = map_level>>0
+        # assert: (x >= 0 && x <= 3)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'msim_ca_enable' : (response[4] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.GetOtnOhpSinkMsiConsequentActionConfig)
         self.add_api_exec_cb()
         return apiResponse
 
@@ -3957,6 +4149,79 @@ class DenebApi:
         self.add_api_exec_cb()
         return apiResponse
 
+    def SetOtuc128bitsAlignmentIntoFlexo (self, direction, enable):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x286
+        header.Tag = 0
+        header.MaxResponse = 4
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = direction>>0
+        # assert: (x >= 1 && x <= 2)
+        command_array[9] = enable>>0
+        # assert: (x >= 0 && x <= 1)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.SetOtuc128bitsAlignmentIntoFlexo)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def GetOtuc128bitsAlignmentIntoFlexo (self, direction):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x287
+        header.Tag = 0
+        header.MaxResponse = 8
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = direction>>0
+        # assert: (x >= 1 && x <= 2)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'enable' : (response[4] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.GetOtuc128bitsAlignmentIntoFlexo)
+        self.add_api_exec_cb()
+        return apiResponse
+
     def SetOverrideDefaultConfig (self, param_index, value):
         #Default header
         header=ArgHeader()
@@ -3977,7 +4242,7 @@ class DenebApi:
         command_array[6] = header.Tag>>0
         command_array[7] = header.Reserved>>0
         command_array[8] = param_index>>0
-        # assert: (x >= 0 && x <= 29)
+        # assert: (x == 12) || (x == 16)
         command_array[9] = value>>0
         command_array[10] = value>>8
         command_array[11] = value>>16
@@ -4000,7 +4265,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 12
-        header.Command = 0x282
+        header.Command = 0x2AA
         header.Tag = 0
         header.MaxResponse = 8
         header.Reserved = 0
@@ -6533,6 +6798,75 @@ class DenebApi:
              'Info' : (response[3] & 0xFF),
         }
         self.check_response(apiResponse, DenebApi.SetHostFastRelockMode)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def GetAutomaticHtxSquelch (self, ):
+        #Default header
+        header=ArgHeader()
+        header.Length = 8
+        header.Command = 0x2A0
+        header.Tag = 0
+        header.MaxResponse = 8
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*8
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'htx_squelch' : (response[4] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.GetAutomaticHtxSquelch)
+        self.add_api_exec_cb()
+        return apiResponse
+
+    def SetAutomaticHtxSquelch (self, htx_squelch):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x29F
+        header.Tag = 0
+        header.MaxResponse = 4
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = htx_squelch>>0
+        # assert: (x >= 0 && x <= 2)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+        }
+        self.check_response(apiResponse, DenebApi.SetAutomaticHtxSquelch)
         self.add_api_exec_cb()
         return apiResponse
 
@@ -12423,7 +12757,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 8
-        header.Command = 0x2A5
+        header.Command = 0x2C1
         header.Tag = 0
         header.MaxResponse = 68
         header.Reserved = 0
@@ -12464,7 +12798,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 8
-        header.Command = 0x2A4
+        header.Command = 0x2C0
         header.Tag = 0
         header.MaxResponse = 8
         header.Reserved = 0
@@ -12499,7 +12833,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 8
-        header.Command = 0x2A3
+        header.Command = 0x2C3
         header.Tag = 0
         header.MaxResponse = 8
         header.Reserved = 0
@@ -12691,7 +13025,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 12
-        header.Command = 0x2A0
+        header.Command = 0x270
         header.Tag = 0
         header.MaxResponse = 4
         header.Reserved = 0
@@ -12728,7 +13062,7 @@ class DenebApi:
         #Default header
         header=ArgHeader()
         header.Length = 16
-        header.Command = 0x29F
+        header.Command = 0x269
         header.Tag = 0
         header.MaxResponse = 4
         header.Reserved = 0
@@ -14006,6 +14340,40 @@ class DenebApi:
         self.add_api_exec_cb()
         return apiResponse
 
+    def GetDisruptionTime (self, ):
+        #Default header
+        header=ArgHeader()
+        header.Length = 8
+        header.Command = 0x23F
+        header.Tag = 0
+        header.MaxResponse = 8
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*8
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'disruption_time' : (response[4] & 0xFF)|((response[5]<<8) & (0xFF<<8))|((response[6]<<16) & (0xFF<<16))|((response[7]<<24) & (0xFF<<24)),
+        }
+        self.check_response(apiResponse, DenebApi.GetDisruptionTime)
+        self.add_api_exec_cb()
+        return apiResponse
+
     def GetIngressSmInformation (self, ):
         #Default header
         header=ArgHeader()
@@ -14045,7 +14413,7 @@ class DenebApi:
              'debug_field_7' : (response[15] & 0xFF),
              'debug_field_8' : (response[16] & 0xFF)|((response[17]<<8) & (0xFF<<8))|((response[18]<<16) & (0xFF<<16))|((response[19]<<24) & (0xFF<<24)),
              'debug_field_9' : (response[20] & 0xFF)|((response[21]<<8) & (0xFF<<8))|((response[22]<<16) & (0xFF<<16))|((response[23]<<24) & (0xFF<<24)),
-             'debug_field_10' : (response[24] & 0xFF)|((response[25]<<8) & (0xFF<<8))|((response[26]<<16) & (0xFF<<16))|((response[27]<<24) & (0xFF<<24)),
+             'restart_cntr' : (response[24] & 0xFF)|((response[25]<<8) & (0xFF<<8))|((response[26]<<16) & (0xFF<<16))|((response[27]<<24) & (0xFF<<24)),
              'debug_field_11' : (response[28] & 0xFF)|((response[29]<<8) & (0xFF<<8))|((response[30]<<16) & (0xFF<<16))|((response[31]<<24) & (0xFF<<24)),
              'debug_field_12' : (response[32] & 0xFF)|((response[33]<<8) & (0xFF<<8))|((response[34]<<16) & (0xFF<<16))|((response[35]<<24) & (0xFF<<24)),
              'debug_field_13' : (response[36] & 0xFF)|((response[37]<<8) & (0xFF<<8))|((response[38]<<16) & (0xFF<<16))|((response[39]<<24) & (0xFF<<24)),
@@ -16379,13 +16747,81 @@ class DenebApi:
         self.add_api_exec_cb()
         return apiResponse
 
+    def GetOsnrCalibrationTable (self, row):
+        #Default header
+        header=ArgHeader()
+        header.Length = 12
+        header.Command = 0x2A3
+        header.Tag = 0
+        header.MaxResponse = 68
+        header.Reserved = 0
+
+        #Command stream
+        command_array=[0]*12
+        command_array[0] = header.Length>>0
+        command_array[1] = header.Length>>8
+        command_array[2] = header.Command>>0
+        command_array[3] = header.Command>>8
+        command_array[4] = header.MaxResponse>>0
+        command_array[5] = header.MaxResponse>>8
+        command_array[6] = header.Tag>>0
+        command_array[7] = header.Reserved>>0
+        command_array[8] = row>>0
+        # assert: (x == 1 || x == 0)
+
+        #Do the call
+        response = self.com.send_command( command_array )
+
+        #Response stream
+        apiResponse = {
+             'Length' : (response[0] & 0xFF)|((response[1]<<8) & (0xFF<<8)),
+             'Status' : (response[2] & 0xFF),
+             'Info' : (response[3] & 0xFF),
+             'lut' : [                          (response[4] & 0xFF)|((response[5]<<8) & (0xFF<<8)),
+                          (response[6] & 0xFF)|((response[7]<<8) & (0xFF<<8)),
+                          (response[8] & 0xFF)|((response[9]<<8) & (0xFF<<8)),
+                          (response[10] & 0xFF)|((response[11]<<8) & (0xFF<<8)),
+                          (response[12] & 0xFF)|((response[13]<<8) & (0xFF<<8)),
+                          (response[14] & 0xFF)|((response[15]<<8) & (0xFF<<8)),
+                          (response[16] & 0xFF)|((response[17]<<8) & (0xFF<<8)),
+                          (response[18] & 0xFF)|((response[19]<<8) & (0xFF<<8)),
+                          (response[20] & 0xFF)|((response[21]<<8) & (0xFF<<8)),
+                          (response[22] & 0xFF)|((response[23]<<8) & (0xFF<<8)),
+                          (response[24] & 0xFF)|((response[25]<<8) & (0xFF<<8)),
+                          (response[26] & 0xFF)|((response[27]<<8) & (0xFF<<8)),
+                          (response[28] & 0xFF)|((response[29]<<8) & (0xFF<<8)),
+                          (response[30] & 0xFF)|((response[31]<<8) & (0xFF<<8)),
+                          (response[32] & 0xFF)|((response[33]<<8) & (0xFF<<8)),
+                          (response[34] & 0xFF)|((response[35]<<8) & (0xFF<<8)),
+                          (response[36] & 0xFF)|((response[37]<<8) & (0xFF<<8)),
+                          (response[38] & 0xFF)|((response[39]<<8) & (0xFF<<8)),
+                          (response[40] & 0xFF)|((response[41]<<8) & (0xFF<<8)),
+                          (response[42] & 0xFF)|((response[43]<<8) & (0xFF<<8)),
+                          (response[44] & 0xFF)|((response[45]<<8) & (0xFF<<8)),
+                          (response[46] & 0xFF)|((response[47]<<8) & (0xFF<<8)),
+                          (response[48] & 0xFF)|((response[49]<<8) & (0xFF<<8)),
+                          (response[50] & 0xFF)|((response[51]<<8) & (0xFF<<8)),
+                          (response[52] & 0xFF)|((response[53]<<8) & (0xFF<<8)),
+                          (response[54] & 0xFF)|((response[55]<<8) & (0xFF<<8)),
+                          (response[56] & 0xFF)|((response[57]<<8) & (0xFF<<8)),
+                          (response[58] & 0xFF)|((response[59]<<8) & (0xFF<<8)),
+                          (response[60] & 0xFF)|((response[61]<<8) & (0xFF<<8)),
+                          (response[62] & 0xFF)|((response[63]<<8) & (0xFF<<8)),
+                          (response[64] & 0xFF)|((response[65]<<8) & (0xFF<<8)),
+                          (response[66] & 0xFF)|((response[67]<<8) & (0xFF<<8)),
+                          ],
+        }
+        self.check_response(apiResponse, DenebApi.GetOsnrCalibrationTable)
+        self.add_api_exec_cb()
+        return apiResponse
+
     def GetLineOpticalChannelMonitorsOccurrenceInfo (self, ):
         #Default header
         header=ArgHeader()
         header.Length = 8
         header.Command = 0x240
         header.Tag = 0
-        header.MaxResponse = 112
+        header.MaxResponse = 104
         header.Reserved = 0
 
         #Command stream
@@ -16457,10 +16893,6 @@ class DenebApi:
              'occurrence_min_tx_skew_h' : (response[98] & 0xFF)|((response[99]<<8) & (0xFF<<8)),
              'occurrence_max_tx_skew_v' : (response[100] & 0xFF)|((response[101]<<8) & (0xFF<<8)),
              'occurrence_min_tx_skew_v' : (response[102] & 0xFF)|((response[103]<<8) & (0xFF<<8)),
-             'occurrence_max_rx_csr_h' : (response[104] & 0xFF)|((response[105]<<8) & (0xFF<<8)),
-             'occurrence_min_rx_csr_h' : (response[106] & 0xFF)|((response[107]<<8) & (0xFF<<8)),
-             'occurrence_max_rx_csr_v' : (response[108] & 0xFF)|((response[109]<<8) & (0xFF<<8)),
-             'occurrence_min_rx_csr_v' : (response[110] & 0xFF)|((response[111]<<8) & (0xFF<<8)),
         }
         self.check_response(apiResponse, DenebApi.GetLineOpticalChannelMonitorsOccurrenceInfo)
         self.add_api_exec_cb()
@@ -16573,7 +17005,7 @@ class DenebApi:
         header.Length = 8
         header.Command = 0x141
         header.Tag = 0
-        header.MaxResponse = 168
+        header.MaxResponse = 204
         header.Reserved = 0
 
         #Command stream
@@ -16598,85 +17030,103 @@ class DenebApi:
              'q_average' : (response[4] & 0xFF)|((response[5]<<8) & (0xFF<<8)),
              'q_min' : (response[6] & 0xFF)|((response[7]<<8) & (0xFF<<8)),
              'q_max' : (response[8] & 0xFF)|((response[9]<<8) & (0xFF<<8)),
-             'cd_average' : (response[10] & 0xFF)|((response[11]<<8) & (0xFF<<8)),
-             'cd_min' : (response[12] & 0xFF)|((response[13]<<8) & (0xFF<<8)),
-             'cd_max' : (response[14] & 0xFF)|((response[15]<<8) & (0xFF<<8)),
-             'dgd_average' : (response[16] & 0xFF)|((response[17]<<8) & (0xFF<<8)),
-             'dgd_min' : (response[18] & 0xFF)|((response[19]<<8) & (0xFF<<8)),
-             'dgd_max' : (response[20] & 0xFF)|((response[21]<<8) & (0xFF<<8)),
-             'reserved_0' : (response[22] & 0xFF)|((response[23]<<8) & (0xFF<<8)),
-             'reserved_1' : (response[24] & 0xFF)|((response[25]<<8) & (0xFF<<8)),
-             'reserved_2' : (response[26] & 0xFF)|((response[27]<<8) & (0xFF<<8)),
-             'pdl_average' : (response[28] & 0xFF)|((response[29]<<8) & (0xFF<<8)),
-             'pdl_min' : (response[30] & 0xFF)|((response[31]<<8) & (0xFF<<8)),
-             'pdl_max' : (response[32] & 0xFF)|((response[33]<<8) & (0xFF<<8)),
-             'osnr_average' : (response[34] & 0xFF)|((response[35]<<8) & (0xFF<<8)),
-             'osnr_min' : (response[36] & 0xFF)|((response[37]<<8) & (0xFF<<8)),
-             'osnr_max' : (response[38] & 0xFF)|((response[39]<<8) & (0xFF<<8)),
-             'esnr_average' : (response[40] & 0xFF)|((response[41]<<8) & (0xFF<<8)),
-             'esnr_min' : (response[42] & 0xFF)|((response[43]<<8) & (0xFF<<8)),
-             'esnr_max' : (response[44] & 0xFF)|((response[45]<<8) & (0xFF<<8)),
-             'cfo_average' : (response[46] & 0xFF)|((response[47]<<8) & (0xFF<<8)),
-             'cfo_min' : (response[48] & 0xFF)|((response[49]<<8) & (0xFF<<8)),
-             'cfo_max' : (response[50] & 0xFF)|((response[51]<<8) & (0xFF<<8)),
-             'evm_average' : (response[52] & 0xFF)|((response[53]<<8) & (0xFF<<8)),
-             'evm_min' : (response[54] & 0xFF)|((response[55]<<8) & (0xFF<<8)),
-             'evm_max' : (response[56] & 0xFF)|((response[57]<<8) & (0xFF<<8)),
-             'sop_average' : (response[58] & 0xFF)|((response[59]<<8) & (0xFF<<8)),
-             'sop_min' : (response[60] & 0xFF)|((response[61]<<8) & (0xFF<<8)),
-             'sop_max' : (response[62] & 0xFF)|((response[63]<<8) & (0xFF<<8)),
-             'reserved_3' : (response[64] & 0xFF)|((response[65]<<8) & (0xFF<<8)),
-             'reserved_4' : (response[66] & 0xFF)|((response[67]<<8) & (0xFF<<8)),
-             'reserved_5' : (response[68] & 0xFF)|((response[69]<<8) & (0xFF<<8)),
-             'rx_angle_average_h' : (response[70] & 0xFF)|((response[71]<<8) & (0xFF<<8)),
-             'rx_angle_min_h' : (response[72] & 0xFF)|((response[73]<<8) & (0xFF<<8)),
-             'rx_angle_max_h' : (response[74] & 0xFF)|((response[75]<<8) & (0xFF<<8)),
-             'rx_angle_average_v' : (response[76] & 0xFF)|((response[77]<<8) & (0xFF<<8)),
-             'rx_angle_min_v' : (response[78] & 0xFF)|((response[79]<<8) & (0xFF<<8)),
-             'rx_angle_max_v' : (response[80] & 0xFF)|((response[81]<<8) & (0xFF<<8)),
-             'rx_gain_mism_average_h' : (response[82] & 0xFF)|((response[83]<<8) & (0xFF<<8)),
-             'rx_gain_mism_min_h' : (response[84] & 0xFF)|((response[85]<<8) & (0xFF<<8)),
-             'rx_gain_mism_max_h' : (response[86] & 0xFF)|((response[87]<<8) & (0xFF<<8)),
-             'rx_gain_mism_average_v' : (response[88] & 0xFF)|((response[89]<<8) & (0xFF<<8)),
-             'rx_gain_mism_min_v' : (response[90] & 0xFF)|((response[91]<<8) & (0xFF<<8)),
-             'rx_gain_mism_max_v' : (response[92] & 0xFF)|((response[93]<<8) & (0xFF<<8)),
-             'rx_skew_average_h' : (response[94] & 0xFF)|((response[95]<<8) & (0xFF<<8)),
-             'rx_skew_min_h' : (response[96] & 0xFF)|((response[97]<<8) & (0xFF<<8)),
-             'rx_skew_max_h' : (response[98] & 0xFF)|((response[99]<<8) & (0xFF<<8)),
-             'rx_skew_average_v' : (response[100] & 0xFF)|((response[101]<<8) & (0xFF<<8)),
-             'rx_skew_min_v' : (response[102] & 0xFF)|((response[103]<<8) & (0xFF<<8)),
-             'rx_skew_max_v' : (response[104] & 0xFF)|((response[105]<<8) & (0xFF<<8)),
-             'rx_dc_average_h' : (response[106] & 0xFF)|((response[107]<<8) & (0xFF<<8)),
-             'rx_dc_min_h' : (response[108] & 0xFF)|((response[109]<<8) & (0xFF<<8)),
-             'rx_dc_max_h' : (response[110] & 0xFF)|((response[111]<<8) & (0xFF<<8)),
-             'rx_dc_average_v' : (response[112] & 0xFF)|((response[113]<<8) & (0xFF<<8)),
-             'rx_dc_min_v' : (response[114] & 0xFF)|((response[115]<<8) & (0xFF<<8)),
-             'rx_dc_max_v' : (response[116] & 0xFF)|((response[117]<<8) & (0xFF<<8)),
-             'tx_angle_average_h' : (response[118] & 0xFF)|((response[119]<<8) & (0xFF<<8)),
-             'tx_angle_min_h' : (response[120] & 0xFF)|((response[121]<<8) & (0xFF<<8)),
-             'tx_angle_max_h' : (response[122] & 0xFF)|((response[123]<<8) & (0xFF<<8)),
-             'tx_angle_average_v' : (response[124] & 0xFF)|((response[125]<<8) & (0xFF<<8)),
-             'tx_angle_min_v' : (response[126] & 0xFF)|((response[127]<<8) & (0xFF<<8)),
-             'tx_angle_max_v' : (response[128] & 0xFF)|((response[129]<<8) & (0xFF<<8)),
-             'tx_gain_mism_average_h' : (response[130] & 0xFF)|((response[131]<<8) & (0xFF<<8)),
-             'tx_gain_mism_min_h' : (response[132] & 0xFF)|((response[133]<<8) & (0xFF<<8)),
-             'tx_gain_mism_max_h' : (response[134] & 0xFF)|((response[135]<<8) & (0xFF<<8)),
-             'tx_gain_mism_average_v' : (response[136] & 0xFF)|((response[137]<<8) & (0xFF<<8)),
-             'tx_gain_mism_min_v' : (response[138] & 0xFF)|((response[139]<<8) & (0xFF<<8)),
-             'tx_gain_mism_max_v' : (response[140] & 0xFF)|((response[141]<<8) & (0xFF<<8)),
-             'tx_skew_average_h' : (response[142] & 0xFF)|((response[143]<<8) & (0xFF<<8)),
-             'tx_skew_min_h' : (response[144] & 0xFF)|((response[145]<<8) & (0xFF<<8)),
-             'tx_skew_max_h' : (response[146] & 0xFF)|((response[147]<<8) & (0xFF<<8)),
-             'tx_skew_average_v' : (response[148] & 0xFF)|((response[149]<<8) & (0xFF<<8)),
-             'tx_skew_min_v' : (response[150] & 0xFF)|((response[151]<<8) & (0xFF<<8)),
-             'tx_skew_max_v' : (response[152] & 0xFF)|((response[153]<<8) & (0xFF<<8)),
-             'rx_csr_average_h' : (response[154] & 0xFF)|((response[155]<<8) & (0xFF<<8)),
-             'rx_csr_min_h' : (response[156] & 0xFF)|((response[157]<<8) & (0xFF<<8)),
-             'rx_csr_max_h' : (response[158] & 0xFF)|((response[159]<<8) & (0xFF<<8)),
-             'rx_csr_average_v' : (response[160] & 0xFF)|((response[161]<<8) & (0xFF<<8)),
-             'rx_csr_min_v' : (response[162] & 0xFF)|((response[163]<<8) & (0xFF<<8)),
-             'rx_csr_max_v' : (response[164] & 0xFF)|((response[165]<<8) & (0xFF<<8)),
-             'reserved' : (response[166] & 0xFF)|((response[167]<<8) & (0xFF<<8)),
+             'q_instant' : (response[10] & 0xFF)|((response[11]<<8) & (0xFF<<8)),
+             'cd_average' : (response[12] & 0xFF)|((response[13]<<8) & (0xFF<<8)),
+             'cd_min' : (response[14] & 0xFF)|((response[15]<<8) & (0xFF<<8)),
+             'cd_max' : (response[16] & 0xFF)|((response[17]<<8) & (0xFF<<8)),
+             'cd_instant' : (response[18] & 0xFF)|((response[19]<<8) & (0xFF<<8)),
+             'dgd_average' : (response[20] & 0xFF)|((response[21]<<8) & (0xFF<<8)),
+             'dgd_min' : (response[22] & 0xFF)|((response[23]<<8) & (0xFF<<8)),
+             'dgd_max' : (response[24] & 0xFF)|((response[25]<<8) & (0xFF<<8)),
+             'dgd_instant' : (response[26] & 0xFF)|((response[27]<<8) & (0xFF<<8)),
+             'reserved_0' : (response[28] & 0xFF)|((response[29]<<8) & (0xFF<<8)),
+             'reserved_1' : (response[30] & 0xFF)|((response[31]<<8) & (0xFF<<8)),
+             'reserved_2' : (response[32] & 0xFF)|((response[33]<<8) & (0xFF<<8)),
+             'reserved_3' : (response[34] & 0xFF)|((response[35]<<8) & (0xFF<<8)),
+             'pdl_average' : (response[36] & 0xFF)|((response[37]<<8) & (0xFF<<8)),
+             'pdl_min' : (response[38] & 0xFF)|((response[39]<<8) & (0xFF<<8)),
+             'pdl_max' : (response[40] & 0xFF)|((response[41]<<8) & (0xFF<<8)),
+             'pdl_instant' : (response[42] & 0xFF)|((response[43]<<8) & (0xFF<<8)),
+             'osnr_average' : (response[44] & 0xFF)|((response[45]<<8) & (0xFF<<8)),
+             'osnr_min' : (response[46] & 0xFF)|((response[47]<<8) & (0xFF<<8)),
+             'osnr_max' : (response[48] & 0xFF)|((response[49]<<8) & (0xFF<<8)),
+             'osnr_instant' : (response[50] & 0xFF)|((response[51]<<8) & (0xFF<<8)),
+             'esnr_average' : (response[52] & 0xFF)|((response[53]<<8) & (0xFF<<8)),
+             'esnr_min' : (response[54] & 0xFF)|((response[55]<<8) & (0xFF<<8)),
+             'esnr_max' : (response[56] & 0xFF)|((response[57]<<8) & (0xFF<<8)),
+             'esnr_instant' : (response[58] & 0xFF)|((response[59]<<8) & (0xFF<<8)),
+             'cfo_average' : (response[60] & 0xFF)|((response[61]<<8) & (0xFF<<8)),
+             'cfo_min' : (response[62] & 0xFF)|((response[63]<<8) & (0xFF<<8)),
+             'cfo_max' : (response[64] & 0xFF)|((response[65]<<8) & (0xFF<<8)),
+             'cfo_instant' : (response[66] & 0xFF)|((response[67]<<8) & (0xFF<<8)),
+             'evm_average' : (response[68] & 0xFF)|((response[69]<<8) & (0xFF<<8)),
+             'evm_min' : (response[70] & 0xFF)|((response[71]<<8) & (0xFF<<8)),
+             'evm_max' : (response[72] & 0xFF)|((response[73]<<8) & (0xFF<<8)),
+             'evm_instant' : (response[74] & 0xFF)|((response[75]<<8) & (0xFF<<8)),
+             'sop_average' : (response[76] & 0xFF)|((response[77]<<8) & (0xFF<<8)),
+             'sop_min' : (response[78] & 0xFF)|((response[79]<<8) & (0xFF<<8)),
+             'sop_max' : (response[80] & 0xFF)|((response[81]<<8) & (0xFF<<8)),
+             'sop_instant' : (response[82] & 0xFF)|((response[83]<<8) & (0xFF<<8)),
+             'mer_average' : (response[84] & 0xFF)|((response[85]<<8) & (0xFF<<8)),
+             'mer_min' : (response[86] & 0xFF)|((response[87]<<8) & (0xFF<<8)),
+             'mer_max' : (response[88] & 0xFF)|((response[89]<<8) & (0xFF<<8)),
+             'mer_instant' : (response[90] & 0xFF)|((response[91]<<8) & (0xFF<<8)),
+             'rx_angle_average_h' : (response[92] & 0xFF)|((response[93]<<8) & (0xFF<<8)),
+             'rx_angle_min_h' : (response[94] & 0xFF)|((response[95]<<8) & (0xFF<<8)),
+             'rx_angle_max_h' : (response[96] & 0xFF)|((response[97]<<8) & (0xFF<<8)),
+             'rx_angle_instant_h' : (response[98] & 0xFF)|((response[99]<<8) & (0xFF<<8)),
+             'rx_angle_average_v' : (response[100] & 0xFF)|((response[101]<<8) & (0xFF<<8)),
+             'rx_angle_min_v' : (response[102] & 0xFF)|((response[103]<<8) & (0xFF<<8)),
+             'rx_angle_max_v' : (response[104] & 0xFF)|((response[105]<<8) & (0xFF<<8)),
+             'rx_angle_instant_v' : (response[106] & 0xFF)|((response[107]<<8) & (0xFF<<8)),
+             'rx_gain_mism_average_h' : (response[108] & 0xFF)|((response[109]<<8) & (0xFF<<8)),
+             'rx_gain_mism_min_h' : (response[110] & 0xFF)|((response[111]<<8) & (0xFF<<8)),
+             'rx_gain_mism_max_h' : (response[112] & 0xFF)|((response[113]<<8) & (0xFF<<8)),
+             'rx_gain_mism_instant_h' : (response[114] & 0xFF)|((response[115]<<8) & (0xFF<<8)),
+             'rx_gain_mism_average_v' : (response[116] & 0xFF)|((response[117]<<8) & (0xFF<<8)),
+             'rx_gain_mism_min_v' : (response[118] & 0xFF)|((response[119]<<8) & (0xFF<<8)),
+             'rx_gain_mism_max_v' : (response[120] & 0xFF)|((response[121]<<8) & (0xFF<<8)),
+             'rx_gain_mism_instant_v' : (response[122] & 0xFF)|((response[123]<<8) & (0xFF<<8)),
+             'rx_skew_average_h' : (response[124] & 0xFF)|((response[125]<<8) & (0xFF<<8)),
+             'rx_skew_min_h' : (response[126] & 0xFF)|((response[127]<<8) & (0xFF<<8)),
+             'rx_skew_max_h' : (response[128] & 0xFF)|((response[129]<<8) & (0xFF<<8)),
+             'rx_skew_instant_h' : (response[130] & 0xFF)|((response[131]<<8) & (0xFF<<8)),
+             'rx_skew_average_v' : (response[132] & 0xFF)|((response[133]<<8) & (0xFF<<8)),
+             'rx_skew_min_v' : (response[134] & 0xFF)|((response[135]<<8) & (0xFF<<8)),
+             'rx_skew_max_v' : (response[136] & 0xFF)|((response[137]<<8) & (0xFF<<8)),
+             'rx_skew_instant_v' : (response[138] & 0xFF)|((response[139]<<8) & (0xFF<<8)),
+             'rx_dc_average_h' : (response[140] & 0xFF)|((response[141]<<8) & (0xFF<<8)),
+             'rx_dc_min_h' : (response[142] & 0xFF)|((response[143]<<8) & (0xFF<<8)),
+             'rx_dc_max_h' : (response[144] & 0xFF)|((response[145]<<8) & (0xFF<<8)),
+             'rx_dc_instant_h' : (response[146] & 0xFF)|((response[147]<<8) & (0xFF<<8)),
+             'rx_dc_average_v' : (response[148] & 0xFF)|((response[149]<<8) & (0xFF<<8)),
+             'rx_dc_min_v' : (response[150] & 0xFF)|((response[151]<<8) & (0xFF<<8)),
+             'rx_dc_max_v' : (response[152] & 0xFF)|((response[153]<<8) & (0xFF<<8)),
+             'rx_dc_instant_v' : (response[154] & 0xFF)|((response[155]<<8) & (0xFF<<8)),
+             'tx_angle_average_h' : (response[156] & 0xFF)|((response[157]<<8) & (0xFF<<8)),
+             'tx_angle_min_h' : (response[158] & 0xFF)|((response[159]<<8) & (0xFF<<8)),
+             'tx_angle_max_h' : (response[160] & 0xFF)|((response[161]<<8) & (0xFF<<8)),
+             'tx_angle_instant_h' : (response[162] & 0xFF)|((response[163]<<8) & (0xFF<<8)),
+             'tx_angle_average_v' : (response[164] & 0xFF)|((response[165]<<8) & (0xFF<<8)),
+             'tx_angle_min_v' : (response[166] & 0xFF)|((response[167]<<8) & (0xFF<<8)),
+             'tx_angle_max_v' : (response[168] & 0xFF)|((response[169]<<8) & (0xFF<<8)),
+             'tx_angle_instant_v' : (response[170] & 0xFF)|((response[171]<<8) & (0xFF<<8)),
+             'tx_gain_mism_average_h' : (response[172] & 0xFF)|((response[173]<<8) & (0xFF<<8)),
+             'tx_gain_mism_min_h' : (response[174] & 0xFF)|((response[175]<<8) & (0xFF<<8)),
+             'tx_gain_mism_max_h' : (response[176] & 0xFF)|((response[177]<<8) & (0xFF<<8)),
+             'tx_gain_mism_instant_h' : (response[178] & 0xFF)|((response[179]<<8) & (0xFF<<8)),
+             'tx_gain_mism_average_v' : (response[180] & 0xFF)|((response[181]<<8) & (0xFF<<8)),
+             'tx_gain_mism_min_v' : (response[182] & 0xFF)|((response[183]<<8) & (0xFF<<8)),
+             'tx_gain_mism_max_v' : (response[184] & 0xFF)|((response[185]<<8) & (0xFF<<8)),
+             'tx_gain_mism_instant_v' : (response[186] & 0xFF)|((response[187]<<8) & (0xFF<<8)),
+             'tx_skew_average_h' : (response[188] & 0xFF)|((response[189]<<8) & (0xFF<<8)),
+             'tx_skew_min_h' : (response[190] & 0xFF)|((response[191]<<8) & (0xFF<<8)),
+             'tx_skew_max_h' : (response[192] & 0xFF)|((response[193]<<8) & (0xFF<<8)),
+             'tx_skew_instant_h' : (response[194] & 0xFF)|((response[195]<<8) & (0xFF<<8)),
+             'tx_skew_average_v' : (response[196] & 0xFF)|((response[197]<<8) & (0xFF<<8)),
+             'tx_skew_min_v' : (response[198] & 0xFF)|((response[199]<<8) & (0xFF<<8)),
+             'tx_skew_max_v' : (response[200] & 0xFF)|((response[201]<<8) & (0xFF<<8)),
+             'tx_skew_instant_v' : (response[202] & 0xFF)|((response[203]<<8) & (0xFF<<8)),
         }
         self.check_response(apiResponse, DenebApi.GetLineOpticalChannelMonitorsAll)
         self.add_api_exec_cb()
@@ -16702,7 +17152,7 @@ class DenebApi:
         command_array[6] = header.Tag>>0
         command_array[7] = header.Reserved>>0
         command_array[8] = item>>0
-        # assert: (x >= 0 && x <= 26)
+        # assert: (x >= 0 && x <= 24)
 
         #Do the call
         response = self.com.send_command( command_array )
@@ -16715,6 +17165,7 @@ class DenebApi:
              'average' : (response[4] & 0xFF)|((response[5]<<8) & (0xFF<<8)),
              'min' : (response[6] & 0xFF)|((response[7]<<8) & (0xFF<<8)),
              'max' : (response[8] & 0xFF)|((response[9]<<8) & (0xFF<<8)),
+             'instant' : (response[10] & 0xFF)|((response[11]<<8) & (0xFF<<8)),
         }
         self.check_response(apiResponse, DenebApi.GetLineOpticalChannelMonitorsItem)
         self.add_api_exec_cb()

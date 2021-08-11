@@ -10,6 +10,8 @@ class CdbApi:
         self.CMD0002h = self.ChangePassword
         self.CMD0040h = self.ModuleFeaturesImplemented
         self.CMD0100h = self.GetFirmwareInfo
+        self.CMD0109h = self.RunFirmwareImage
+        self.CMD010Ah = self.CommitImage
 
     def QueryStatus(self, delay=0):
         """
@@ -137,3 +139,38 @@ class CdbApi:
             result['Sub-MCU Image B Version'] = struct.unpack('>I', rlpl[(178-136):(182-136)])[0]#178-181
             result['DSP Image B Version'] = struct.unpack('>I', rlpl[(182-136):(186-136)])[0]#182-185
             return result
+
+    def RunFirmwareImage(self, reset_mode=0x01, delay_to_reset=0):
+        """
+        alias: CMD0109h
+        reset_mode: <int> 
+            00h = Traffic affecting Reset to Inactive Image.
+            01h = Attempt Hitless Reset to Inactive Image
+            02h = Traffic affecting Reset to Running Image.
+            03h = Attempt Hitless Reset to Running Image
+        delay_to_reset: <int> unit in ms
+        """
+        lpl = bytes([0, reset_mode]) + int.to_bytes(delay_to_reset, 2, 'big')
+        success, last_command_result = self.__cdb(0x0109, lpl=lpl)
+        if not success:
+            last_command_result_desc_map = {
+                0b000000: 'Failed, no specific failure code',
+                0b000010: 'Parameter range error or not supported',
+                0b000101: 'CdbChkCode error',
+            }
+            raise ValueError('CDB command failed. Last command result: {result:06b}b | {msg}'.format(
+                result=last_command_result, msg=last_command_result_desc_map.get(last_command_result, 'Unknown failure code')))
+
+    def CommitImage(self):
+        """
+        alias: CMD010Ah
+        """
+        success, last_command_result = self.__cdb(0x010A)
+        if not success:
+            last_command_result_desc_map = {
+                0b000000: 'Failed, no specific failure code',
+                0b000010: 'Parameter range error or not supported',
+                0b000101: 'CdbChkCode error',
+            }
+            raise ValueError('CDB command failed. Last command result: {result:06b}b | {msg}'.format(
+                result=last_command_result, msg=last_command_result_desc_map.get(last_command_result, 'Unknown failure code')))
