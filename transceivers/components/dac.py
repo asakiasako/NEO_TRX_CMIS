@@ -52,6 +52,28 @@ class Dac:
         chkcode.value = - chkcode.value - 1
         return chkcode.value
 
+    def __getitem__(self, slice):
+        if isinstance(slice, str):
+            key = slice
+            mode = 'a'
+        elif isinstance(slice, (tuple, list)):
+            key = slice[0]
+            mode = slice[1]
+        else:
+            raise TypeError
+        return self.get(key, mode)
+
+    def __setitem__(self, slice, v):
+        if isinstance(slice, str):
+            key = slice
+            mode = 'a'
+        elif isinstance(slice, (tuple, list)):
+            key = slice[0]
+            mode = slice[1]
+        else:
+            raise TypeError
+        return self.set(key, v, mode)
+
     def get(self, key, mode='a'):
         if key not in self.KEYS:
             raise KeyError('Invalid key for DAC: {key}'.format(key=key))
