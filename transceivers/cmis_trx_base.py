@@ -134,6 +134,11 @@ class CMISTrxBase(CMIS):
         return self.get_vcc_monitor() * self.get_icc_monitor()
 
     # --- Applications ---
+    def get_cmis_revision(self):
+        upper = self[1][7:4]
+        lower = self[1][3:0]
+        return upper, lower
+
     def get_pn(self):
         return self[0, 0x00, 148:163].decode().strip()
 
@@ -239,10 +244,13 @@ class CMISTrxBase(CMIS):
         return:
             * <float> frequency in THz
         """
-        # ms_bytes = (168+4*(lane-1), 169+4*(lane-1))  # THz
-        # ls_bytes = (170+4*(lane-1), 171+4*(lane-1))  # 0.05GHz
-        # self.select_bank_page(bank=0, page=0x12)
-        # return self[slice(*ms_bytes)].to_unsigned() + self[slice(*ls_bytes)].to_unsigned()*0.05*10**(-3)
-        self.select_bank_page(bank=0, page=0x12)
-        freq = self[168:171].to_unsigned()/1000/1000
+        cmis_revision = self.get_cmis_revision()
+        if cmis_revision <= (4, 0):
+            ms_bytes = (168+4*(lane-1), 169+4*(lane-1))  # THz
+            ls_bytes = (170+4*(lane-1), 171+4*(lane-1))  # 0.05GHz
+            self.select_bank_page(bank=0, page=0x12)
+            freq = self[slice(*ms_bytes)].to_unsigned() + self[slice(*ls_bytes)].to_unsigned()*0.05*10**(-3)
+        else:
+            self.select_bank_page(bank=0, page=0x12)
+            freq = self[168:171].to_unsigned()/1000/1000
         return freq
